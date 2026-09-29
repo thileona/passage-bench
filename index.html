@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c2334d">
+<meta name="description" content="Suspension HEK293 shake-flask passaging: calculators, protocol and key concepts.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Passage Bench">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>HEK293 Passage Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: phone-first single column (max 600px), screen switched by a bottom tab bar. Accent = phenol red, loop/tool colour = teal. */
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --sunk: #eceef3;
+  --fg: #1b2230;
+  --muted: #5d6677;
+  --line: #d9dde5;
+  --accent: #c2334d;
+  --accent-soft: #fbe8ec;
+  --teal: #1f6f78;
+  --teal-soft: #e2f1f2;
+  --warn: #8f5500;
+  --warn-soft: #fdf1dc;
+  --bad: #b3261e;
+  --bad-soft: #fde7e5;
+  --good: #22713a;
+  --good-soft: #e3f3e7;
+  --ph-acid: #e7c33a;
+  --ph-ok: #d9475c;
+  --ph-alk: #a8358b;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111419; --surface: #1a1f28; --sunk: #141820; --fg: #e8ebf1; --muted: #9aa3b2; --line: #2d3440;
+  --accent: #f0788c; --accent-soft: #3a1f26; --teal: #6cc3cb; --teal-soft: #173033;
+  --warn: #f2b35a; --warn-soft: #36291a; --bad: #ff8a80; --bad-soft: #3b1e1c; --good: #7fd495; --good-soft: #183020; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111419; --surface: #1a1f28; --sunk: #141820; --fg: #e8ebf1; --muted: #9aa3b2; --line: #2d3440;
+  --accent: #f0788c; --accent-soft: #3a1f26; --teal: #6cc3cb; --teal-soft: #173033;
+  --warn: #f2b35a; --warn-soft: #36291a; --bad: #ff8a80; --bad-soft: #3b1e1c; --good: #7fd495; --good-soft: #183020; color-scheme: dark }
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); padding-inline: 16px; padding-block: 18px 110px }
+.app { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0 }
+h1 { font-size: 26px; line-height: 1.1; font-weight: 700 }
+h2 { font-size: 21px; line-height: 1.2; font-weight: 700 }
+h3 { font-size: 17px; line-height: 1.25; font-weight: 500 }
+p { margin: 0 }
+.eyebrow { font: 500 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent) }
+.label { font: 500 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.muted { color: var(--muted) }
+.small { font-size: 14px }
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px }
+.top .sub { color: var(--muted); font-size: 14px }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0 }
+.stack { display: flex; flex-direction: column; gap: 12px }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+
+/* tool list */
+.tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px }
+.tool { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; color: var(--fg); font: inherit; cursor: pointer }
+.tool:hover { border-color: var(--teal) }
+.tool .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--teal-soft); color: var(--teal); display: grid; place-items: center; font: 500 15px/1 var(--mono) }
+.tool b { display: block; font-weight: 600 }
+.tool span.d { display: block; font-size: 14px; color: var(--muted); line-height: 1.35 }
+.tool .chev { color: var(--muted); font-family: var(--mono) }
+.section-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 4px }
+
+/* calculator */
+.back { background: none; border: none; color: var(--teal); font: 600 15px/1 var(--body); padding: 6px 0; cursor: pointer; align-self: flex-start }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px }
+@media (max-width: 380px) { .fields { grid-template-columns: minmax(0, 1fr) } }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.field.full { grid-column: 1 / -1 }
+.field label { font-size: 13px; color: var(--muted); line-height: 1.25 }
+.inp { position: relative }
+.inp input { width: 100%; font: 500 18px/1.2 var(--mono); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 11px 64px 11px 12px; font-variant-numeric: tabular-nums }
+.inp .u { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 400 12px/1 var(--mono); color: var(--muted); pointer-events: none }
+input:focus-visible, select:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.chip { font: 500 10px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 3px 7px; background: var(--warn-soft); color: var(--warn); white-space: nowrap }
+.chip.ok { background: var(--good-soft); color: var(--good) }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px }
+.seg button { border: none; background: none; color: var(--muted); font: 600 14px/1.2 var(--body); padding: 9px 6px; border-radius: 7px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12) }
+
+.results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px }
+.res { background: var(--sunk); border-radius: 12px; padding: 12px; min-width: 0 }
+.res.big { grid-column: 1 / -1; background: var(--teal-soft) }
+.res span { display: block; font-size: 13px; color: var(--muted); line-height: 1.3 }
+.res b { display: block; font: 500 22px/1.25 var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.res.big b { font-size: 30px; color: var(--teal) }
+.res i { display: block; font-style: normal; font: 400 12px/1.35 var(--mono); color: var(--muted); margin-top: 3px }
+.msg { border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45 }
+.msg.warn { background: var(--warn-soft); color: var(--warn) }
+.msg.bad { background: var(--bad-soft); color: var(--bad) }
+.msg.good { background: var(--good-soft); color: var(--good) }
+.msg.info { background: var(--sunk); color: var(--fg) }
+.formula { font: 400 13px/1.6 var(--mono); background: var(--sunk); border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; overflow-x: auto; white-space: pre }
+details.how summary { cursor: pointer; font-weight: 600; color: var(--teal); list-style: none }
+details.how summary::-webkit-details-marker { display: none }
+details.how summary::before { content: "+ "; font-family: var(--mono) }
+details.how[open] summary::before { content: "− " }
+details.how > div { margin-top: 10px; display: flex; flex-direction: column; gap: 8px }
+
+/* protocol */
+.steps { display: flex; flex-direction: column; gap: 8px }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
+.step summary { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 13px 14px; cursor: pointer; list-style: none }
+.step summary::-webkit-details-marker { display: none }
+.step .n { width: 30px; height: 30px; border-radius: 50%; background: var(--teal-soft); color: var(--teal); display: grid; place-items: center; font: 500 13px/1 var(--mono) }
+.step.side .n { background: var(--sunk); color: var(--muted) }
+.step summary b { font-weight: 600 }
+.step summary span.s { display: block; font-size: 13px; color: var(--muted) }
+.step summary .chev { font-family: var(--mono); color: var(--muted); transition: transform .15s }
+.step[open] summary .chev { transform: rotate(90deg) }
+.step .body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 12px }
+ul.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px }
+ul.list li::marker { color: var(--teal) }
+.confirm { background: var(--warn-soft); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px }
+.confirm .label { color: var(--warn) }
+.confirm ul.list li::marker { color: var(--warn) }
+.loopnote { font: 500 12px/1.3 var(--mono); color: var(--teal); text-align: center; padding: 2px 0 }
+
+/* checklist */
+.check { display: flex; flex-direction: column; gap: 2px }
+.check label { display: grid; grid-template-columns: 24px minmax(0,1fr); gap: 10px; align-items: start; padding: 9px 4px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 15px; line-height: 1.4 }
+.check label:last-child { border-bottom: none }
+.check input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--teal) }
+.check input:checked + span { color: var(--muted); text-decoration: line-through }
+.check .grp { font: 500 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); padding: 12px 4px 4px }
+.progress { height: 6px; background: var(--sunk); border-radius: 999px; overflow: hidden }
+.progress i { display: block; height: 100%; background: var(--teal); width: 0; transition: width .2s }
+
+/* learn */
+.concept p + p { margin-top: 8px }
+.phrow { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px }
+.ph { border-radius: 10px; border: 1px solid var(--line); padding: 10px; font-size: 13px; line-height: 1.35 }
+.ph i { display: block; height: 26px; border-radius: 6px; margin-bottom: 8px }
+.ph b { display: block; font-size: 14px }
+table.kv { width: 100%; border-collapse: collapse; font-size: 14px }
+table.kv td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: top }
+table.kv td:first-child { color: var(--muted); width: 46% }
+table.kv td:last-child { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums }
+table.kv tr:last-child td { border-bottom: none }
+.gloss dt { font-weight: 600; margin-top: 10px }
+.gloss dt:first-child { margin-top: 0 }
+.gloss dd { margin: 2px 0 0; color: var(--muted); font-size: 14px }
+.svgwrap { overflow-x: auto }
+.svgwrap svg { display: block; width: 100%; min-width: 300px; height: auto }
+.train { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px }
+.train span.b { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--sunk) }
+.train span.b.me { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); font-weight: 600 }
+.train span.a { color: var(--muted); font-family: var(--mono) }
+
+/* settings */
+.set { display: grid; grid-template-columns: minmax(0,1fr) 150px; gap: 8px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line) }
+.set:last-child { border-bottom: none }
+.set .t { font-weight: 600; font-size: 15px; line-height: 1.3 }
+.set .h { font-size: 13px; color: var(--muted); line-height: 1.35 }
+.set .conf { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted) }
+.set .conf input { accent-color: var(--good); width: 18px; height: 18px; margin: 0 }
+.set .inp input { font-size: 16px; padding: 9px 52px 9px 10px }
+textarea { width: 100%; min-height: 110px; font: 400 15px/1.5 var(--body); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical }
+.btn { font: 600 15px/1 var(--body); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; cursor: pointer }
+.btn:hover { border-color: var(--fg) }
+.btn.danger { color: var(--bad) }
+
+/* tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 10 }
+.tabbar .in { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 4px }
+.tabbar button { background: none; border: none; color: var(--muted); font: 600 12px/1.1 var(--body); padding: 6px 2px 4px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px }
+.tabbar button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
+.tabbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+<style>
+[hidden] { display: none !important }
+body { margin: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)) }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Suspension HEK293 · 2 L shake flasks</div>
+      <h1>Passage Bench</h1>
+    </div>
+    <div class="sub" id="topsub"></div>
+  </header>
+
+  <!-- TOOLS -->
+  <section id="s-tools" data-screen="tools" class="stack">
+    <div id="toollist" class="stack">
+      <div class="section-title"><span class="label">At the hood</span></div>
+      <div class="tools" id="tools-main"></div>
+      <div class="section-title"><span class="label">Planning and analysis</span></div>
+      <div class="tools" id="tools-plan"></div>
+    </div>
+    <div id="toolview" class="stack" hidden></div>
+  </section>
+
+  <!-- PROTOCOL -->
+  <section id="s-protocol" data-screen="protocol" class="stack" hidden>
+    <div class="seg" role="group" aria-label="Protocol view">
+      <button id="pv-steps" aria-pressed="true">Steps</button>
+      <button id="pv-check" aria-pressed="false">Bench checklist</button>
+    </div>
+    <div id="pv-steps-view" class="steps"></div>
+    <div id="pv-check-view" class="stack" hidden></div>
+  </section>
+
+  <!-- LEARN -->
+  <section id="s-learn" data-screen="learn" class="stack" hidden></section>
+
+  <!-- SETTINGS -->
+  <section id="s-settings" data-screen="settings" class="stack" hidden></section>
+</div>
+
+<nav class="tabbar" aria-label="Sections">
+  <div class="in">
+    <button data-tab="tools" aria-current="page"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h2M16 15v3"/></svg>Tools</button>
+    <button data-tab="protocol"><svg viewBox="0 0 24 24"><path d="M9 4h6M10 4v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V4"/><path d="M7.5 15h9"/></svg>Protocol</button>
+    <button data-tab="learn"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>Learn</button>
+    <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Lab values</button>
+  </div>
+</nav>
+
+<script>
+/* ---------- storage ---------- */
+const KEY = "hekbench.v1";
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+const store = load();
+store.settings = store.settings || {};
+store.inputs = store.inputs || {};
+store.check = store.check || {};
+store.notes = store.notes || "";
+
+/* ---------- lab values (defaults = placeholders until confirmed) ---------- */
+const SETTINGS = [
+  { id: "seed", t: "Target seeding density", h: "VCD right after the split", u: "e6/mL", def: 0.3, conf: false },
+  { id: "passMin", t: "Passage window, lower VCD", h: "Below this, the flask is usually not split yet", u: "e6/mL", def: 2.0, conf: false },
+  { id: "passMax", t: "Passage window, upper VCD", h: "Above this, cells risk leaving exponential growth", u: "e6/mL", def: 4.0, conf: false },
+  { id: "vol", t: "Working volume", h: "Culture volume per flask", u: "mL", def: 800, conf: true },
+  { id: "flask", t: "Flask nominal size", h: "Shake flask capacity", u: "mL", def: 2000, conf: true },
+  { id: "viab", t: "Minimum viability", h: "Below this, flag the flask", u: "%", def: 95, conf: false },
+  { id: "td", t: "Doubling time estimate", h: "Measure yours with the growth tool", u: "h", def: 24, conf: false },
+  { id: "days", t: "Days between passages", h: "Usual interval", u: "days", def: 3.5, conf: true },
+  { id: "maxP", t: "Maximum passage number", h: "Cell age limit after thaw", u: "P", def: 20, conf: false }
+];
+function S(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
+function Sconf(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.conf !== undefined ? v.conf : d.conf; }
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function f(x, d = 1) { if (!isFinite(x)) return "–"; return x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function sig(x) { if (!isFinite(x)) return "–"; const a = Math.abs(x); return f(x, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3); }
+function cells(x) { if (!isFinite(x)) return "–"; if (x >= 1e9) return f(x / 1e9, 2) + " × 10⁹"; return f(x / 1e6, 1) + " × 10⁶"; }
+const PIPS = [5, 10, 25, 50, 100];
+function pipetting(v) {
+  if (!(v > 0)) return "";
+  if (v < 1) return "Use a micropipette (" + f(v * 1000, 0) + " µL)";
+  if (v <= 100) { const p = PIPS.find(p => p >= v); return "One " + p + " mL pipette"; }
+  const full = Math.floor(v / 100); const rest = v - full * 100;
+  if (rest < 0.05) return full + " × 100 mL";
+  const p = PIPS.find(p => p >= rest);
+  return full + " × 100 mL + " + f(rest, 1) + " mL (" + p + " mL pipette)";
+}
+
+/* ---------- calculators ---------- */
+const TOOLS = [
+  {
+    id: "split", group: "main", ic: "÷", title: "Routine split", d: "From your count to culture and medium volumes",
+    fields: [
+      { id: "m", label: "Measured VCD", u: "e6/mL", def: () => 3.0 },
+      { id: "via", label: "Viability", u: "%", def: () => 97 },
+      { id: "t", label: "Target seeding VCD", u: "e6/mL", def: () => S("seed"), set: "seed" },
+      { id: "v", label: "Final volume", u: "mL", def: () => S("vol"), set: "vol" },
+      { id: "n", label: "New flasks from this one", u: "flasks", def: () => 1 },
+      { id: "src", label: "Culture in source flask", u: "mL", def: () => S("vol") }
+    ],
+    formula: "V_culture = target VCD × final volume / measured VCD\nV_medium  = final volume − V_culture",
+    how: ["Measured and target VCD must be in the same unit (here ×10⁶ cells/mL).", "Add the fresh medium to the new flask first, then the culture volume.", "Each replicate flask is calculated from its own count."],
+    calc(v) {
+      const out = { res: [], msgs: [] };
+      if (!(v.m > 0 && v.t > 0 && v.v > 0)) return { err: "Enter measured VCD, target VCD and final volume." };
+      if (v.t >= v.m) return { err: "Target VCD is at or above the measured VCD, so there is nothing to split. Use the top-up tool if you need more cells." };
+      const vc = v.t * v.v / v.m, vm = v.v - vc, n = v.n > 0 ? Math.round(v.n) : 1;
+      out.res.push({ big: true, l: "Culture to transfer, per flask", v: f(vc, 1) + " mL", i: pipetting(vc) });
+      out.res.push({ l: "Fresh medium, per flask", v: f(vm, 1) + " mL", i: pipetting(vm) });
+      out.res.push({ l: "Split ratio", v: "1 : " + f(v.v / vc, 1), i: "dilution factor " + f(v.m / v.t, 2) + "×" });
+      if (n > 1) {
+        out.res.push({ l: "Culture needed, " + n + " flasks", v: f(vc * n, 1) + " mL" });
+        out.res.push({ l: "Medium needed, " + n + " flasks", v: f(vm * n, 1) + " mL" });
+      }
+      out.res.push({ l: "Viable cells seeded per flask", v: cells(v.t * 1e6 * v.v) });
+      if (v.src > 0) {
+        const maxN = Math.floor(v.src / vc);
+        if (vc * n > v.src) out.msgs.push({ c: "bad", t: "Not enough culture: " + n + " flasks need " + f(vc * n, 1) + " mL but the source holds " + f(v.src, 0) + " mL. Maximum is " + maxN + " flask" + (maxN === 1 ? "" : "s") + "." });
+        else out.res.push({ l: "Max flasks from source", v: String(maxN), i: "left in source: " + f(v.src - vc * n, 1) + " mL" });
+      }
+      if (v.via > 0 && v.via < S("viab")) out.msgs.push({ c: "warn", t: "Viability " + f(v.via, 1) + "% is below your threshold (" + S("viab") + "%). Flag it before passaging." });
+      else if (v.via >= S("viab")) out.msgs.push({ c: "good", t: "Viability OK (≥ " + S("viab") + "%)." });
+      if (v.m < S("passMin")) out.msgs.push({ c: "warn", t: "Measured VCD is below the passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL). Consider waiting." });
+      if (v.m > S("passMax")) out.msgs.push({ c: "warn", t: "Measured VCD is above the passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL). Cells may be leaving exponential phase; note it in the ELN." });
+      if (vc > v.v * 0.5) out.msgs.push({ c: "warn", t: "More than half the final volume is old culture. Spent medium will carry over; check the numbers." });
+      return out;
+    }
+  },
+  {
+    id: "topup", group: "main", ic: "+", title: "VCD too low: add inoculum", d: "After the split, bring the flask up to target",
+    modes: [{ id: "add", l: "Add (volume grows)" }, { id: "swap", l: "Keep volume" }],
+    fields: [
+      { id: "c0", label: "VCD in flask now", u: "e6/mL", def: () => 0.25 },
+      { id: "ct", label: "Target VCD", u: "e6/mL", def: () => S("seed"), set: "seed" },
+      { id: "v0", label: "Volume in flask now", u: "mL", def: () => S("vol"), set: "vol" },
+      { id: "ci", label: "Inoculum VCD", u: "e6/mL", def: () => 3.0 }
+    ],
+    formula: {
+      add: "x = V × (target − current) / (inoculum − target)\nfinal volume = V + x",
+      swap: "1. Remove x of the flask culture\n2. Add x of inoculum\nx = V × (target − current) / (inoculum − current)"
+    },
+    how: ["The inoculum is usually the source flask you just split from.", "Quick formula (target − current) × V / inoculum ignores the volume you add, so it lands slightly under target. The exact result is shown below with the quick one for comparison.", "\"Keep volume\" removes culture first so the flask stays at its working volume."],
+    calc(v, mode) {
+      const out = { res: [], msgs: [] };
+      if (!(v.c0 >= 0 && v.ct > 0 && v.v0 > 0 && v.ci > 0)) return { err: "Enter all four values." };
+      if (v.ct <= v.c0) return { err: "The flask is already at or above target. Use the dilute tool instead." };
+      if (v.ci <= v.ct) return { err: "The inoculum must be denser than the target VCD, otherwise adding it can never reach the target." };
+      if (mode === "swap") {
+        const x = v.v0 * (v.ct - v.c0) / (v.ci - v.c0);
+        out.res.push({ big: true, l: "Remove, then add inoculum", v: f(x, 1) + " mL", i: "remove " + f(x, 1) + " mL culture → add " + f(x, 1) + " mL inoculum" });
+        out.res.push({ l: "Final volume", v: f(v.v0, 0) + " mL" });
+        out.res.push({ l: "Final VCD", v: sig(v.ct) + " e6/mL" });
+        out.res.push({ l: "Pipetting", v: pipetting(x) || "–" });
+      } else {
+        const x = v.v0 * (v.ct - v.c0) / (v.ci - v.ct);
+        const xq = (v.ct - v.c0) * v.v0 / v.ci;
+        const cq = (v.c0 * v.v0 + v.ci * xq) / (v.v0 + xq);
+        out.res.push({ big: true, l: "Inoculum to add", v: f(x, 1) + " mL", i: pipetting(x) });
+        out.res.push({ l: "Final volume", v: f(v.v0 + x, 1) + " mL" });
+        out.res.push({ l: "Final VCD", v: sig(v.ct) + " e6/mL" });
+        out.res.push({ l: "Quick formula would add", v: f(xq, 1) + " mL", i: "→ final VCD " + sig(cq) + " e6/mL (" + f((cq / v.ct - 1) * 100, 1) + "%)" });
+        if (v.v0 + x > S("vol") * 1.1) out.msgs.push({ c: "warn", t: "Final volume is more than 10% above the usual " + S("vol") + " mL. Consider \"Keep volume\" to protect oxygen transfer." });
+      }
+      return out;
+    }
+  },
+  {
+    id: "dilute", group: "main", ic: "−", title: "VCD too high: dilute", d: "Bring an over-dense flask down to target",
+    modes: [{ id: "add", l: "Add medium" }, { id: "swap", l: "Keep volume" }],
+    fields: [
+      { id: "c0", label: "VCD in flask now", u: "e6/mL", def: () => 0.45 },
+      { id: "ct", label: "Target VCD", u: "e6/mL", def: () => S("seed"), set: "seed" },
+      { id: "v0", label: "Volume in flask now", u: "mL", def: () => S("vol"), set: "vol" }
+    ],
+    formula: {
+      add: "x = V × (current / target − 1)\nfinal volume = V + x",
+      swap: "1. Remove r of the flask culture\n2. Add r of fresh medium\nr = V × (1 − target / current)"
+    },
+    how: ["Use fresh pre-warmed medium.", "\"Keep volume\" discards culture first so the flask stays at its working volume."],
+    calc(v, mode) {
+      const out = { res: [], msgs: [] };
+      if (!(v.c0 > 0 && v.ct > 0 && v.v0 > 0)) return { err: "Enter all three values." };
+      if (v.ct >= v.c0) return { err: "The flask is already at or below target. Use the top-up tool instead." };
+      if (mode === "swap") {
+        const r = v.v0 * (1 - v.ct / v.c0);
+        out.res.push({ big: true, l: "Remove, then add medium", v: f(r, 1) + " mL", i: "remove " + f(r, 1) + " mL culture → add " + f(r, 1) + " mL medium" });
+        out.res.push({ l: "Final volume", v: f(v.v0, 0) + " mL" });
+        out.res.push({ l: "Pipetting", v: pipetting(r) || "–" });
+      } else {
+        const x = v.v0 * (v.c0 / v.ct - 1);
+        out.res.push({ big: true, l: "Fresh medium to add", v: f(x, 1) + " mL", i: pipetting(x) });
+        out.res.push({ l: "Final volume", v: f(v.v0 + x, 1) + " mL" });
+        if (v.v0 + x > S("vol") * 1.1) out.msgs.push({ c: "warn", t: "Final volume is more than 10% above the usual " + S("vol") + " mL. Consider \"Keep volume\", or split the excess into a second flask." });
+        if (v.v0 + x > S("flask") * 0.5) out.msgs.push({ c: "bad", t: "Over half the flask's nominal volume (" + S("flask") + " mL). Oxygen transfer will suffer." });
+      }
+      return out;
+    }
+  },
+  {
+    id: "growth", group: "plan", ic: "td", title: "Growth and doubling time", d: "From seeding VCD to today's count",
+    fields: [
+      { id: "n0", label: "VCD at seeding", u: "e6/mL", def: () => S("seed") },
+      { id: "n1", label: "VCD now", u: "e6/mL", def: () => 3.0 },
+      { id: "t", label: "Time since seeding", u: "h", def: () => 72 },
+      { id: "cpd", label: "Previous cumulative PD (optional)", u: "PD", def: () => 0 }
+    ],
+    formula: "PD  = log2(VCD now / VCD seeded)\nTd  = t × ln 2 / ln(VCD now / VCD seeded)\nμ   = ln(VCD now / VCD seeded) / t",
+    how: ["Works because the volume doesn't change between seeding and counting.", "Use viable densities for both points.", "72 h = 3 days, 96 h = 4 days. Use real hours if you know them."],
+    calc(v) {
+      const out = { res: [], msgs: [] };
+      if (!(v.n0 > 0 && v.n1 > 0 && v.t > 0)) return { err: "Enter both densities and the time." };
+      if (v.n1 <= v.n0) return { err: "VCD now is not higher than at seeding, so there's no growth to measure. Check the counts or viability." };
+      const r = v.n1 / v.n0, pd = Math.log2(r), td = v.t * Math.LN2 / Math.log(r), mu = Math.log(r) / v.t;
+      out.res.push({ big: true, l: "Doubling time", v: f(td, 1) + " h", i: f(td / 24, 2) + " days" });
+      out.res.push({ l: "Population doublings", v: f(pd, 2) + " PD" });
+      out.res.push({ l: "Fold expansion", v: f(r, 1) + "×" });
+      out.res.push({ l: "Growth rate μ", v: f(mu * 24, 3) + " /day", i: f(mu, 4) + " /h" });
+      if (v.cpd > 0) out.res.push({ l: "New cumulative PD", v: f(v.cpd + pd, 2) });
+      if (td < 16) out.msgs.push({ c: "warn", t: "Faster than typical for HEK293. Double-check the counts and the time." });
+      if (td > 40) out.msgs.push({ c: "warn", t: "Slow growth. Look at viability, clumping, medium and shaker settings." });
+      out.msgs.push({ c: "info", t: "Tip: save this doubling time in Lab values to improve the seeding planner." });
+      return out;
+    }
+  },
+  {
+    id: "plan", group: "plan", ic: "↦", title: "Seeding planner", d: "Pick a seeding VCD to hit a density on passage day",
+    fields: [
+      { id: "tgt", label: "VCD wanted on passage day", u: "e6/mL", def: () => (S("passMin") + S("passMax")) / 2 },
+      { id: "days", label: "Days until next passage", u: "days", def: () => S("days") },
+      { id: "td", label: "Doubling time", u: "h", def: () => S("td"), set: "td" },
+      { id: "seed", label: "Or: planned seeding VCD", u: "e6/mL", def: () => S("seed") }
+    ],
+    formula: "seed VCD      = wanted VCD / 2^(hours / Td)\npredicted VCD = seed VCD × 2^(hours / Td)",
+    how: ["Assumes steady exponential growth with no lag, so treat it as an estimate.", "Useful to choose between a 3-day and a 4-day interval (weekends)."],
+    calc(v) {
+      const out = { res: [], msgs: [] };
+      if (!(v.days > 0 && v.td > 0)) return { err: "Enter the days and the doubling time." };
+      const h = v.days * 24, k = Math.pow(2, h / v.td);
+      if (v.tgt > 0) out.res.push({ big: true, l: "Seed at", v: sig(v.tgt / k) + " e6/mL", i: "to reach " + sig(v.tgt) + " e6/mL in " + f(v.days, 1) + " days" });
+      if (v.seed > 0) out.res.push({ l: "Predicted VCD from planned seeding", v: sig(v.seed * k) + " e6/mL" });
+      out.res.push({ l: "Expansion over interval", v: f(k, 1) + "×", i: f(h / v.td, 2) + " doublings" });
+      const t3 = Math.pow(2, 72 / v.td), t4 = Math.pow(2, 96 / v.td);
+      if (v.seed > 0) out.res.push({ l: "At 3 d / 4 d", v: sig(v.seed * t3) + " / " + sig(v.seed * t4), i: "e6/mL from planned seeding" });
+      if (v.seed > 0 && v.seed * k > S("passMax")) out.msgs.push({ c: "warn", t: "Planned seeding overshoots the passage window upper limit (" + S("passMax") + " e6/mL)." });
+      if (!Sconf("td")) out.msgs.push({ c: "warn", t: "Doubling time is a placeholder. Measure it with the growth tool." });
+      return out;
+    }
+  },
+  {
+    id: "cells", group: "plan", ic: "Σ", title: "Cell numbers and scale-up", d: "Total cells, and how many flasks a source can seed",
+    fields: [
+      { id: "vcd", label: "Source VCD", u: "e6/mL", def: () => 3.0 },
+      { id: "vs", label: "Source volume", u: "mL", def: () => S("vol") },
+      { id: "sd", label: "Seeding VCD", u: "e6/mL", def: () => S("seed"), set: "seed" },
+      { id: "vt", label: "Volume per new flask / vessel", u: "mL", def: () => S("vol") },
+      { id: "n", label: "Flasks / vessels wanted", u: "n", def: () => 2 }
+    ],
+    formula: "total cells   = VCD × volume\ncells needed  = seeding VCD × volume × n\nmax flasks    = floor(total / (seeding VCD × volume))",
+    how: ["For a bioreactor, put its working volume in \"Volume per new flask / vessel\" and n = 1.", "×10⁶ cells/mL × mL = ×10⁶ cells."],
+    calc(v) {
+      const out = { res: [], msgs: [] };
+      if (!(v.vcd > 0 && v.vs > 0)) return { err: "Enter the source VCD and volume." };
+      const tot = v.vcd * 1e6 * v.vs;
+      out.res.push({ big: true, l: "Viable cells in source", v: cells(tot) });
+      if (v.sd > 0 && v.vt > 0) {
+        const per = v.sd * 1e6 * v.vt, n = v.n > 0 ? Math.round(v.n) : 1;
+        out.res.push({ l: "Cells needed per flask", v: cells(per) });
+        out.res.push({ l: "Max flasks from source", v: String(Math.floor(tot / per)) });
+        out.res.push({ l: "Cells needed for " + n, v: cells(per * n) });
+        out.res.push({ l: "Source volume for " + n, v: f(per * n / (v.vcd * 1e6), 1) + " mL" });
+        if (per * n > tot) out.msgs.push({ c: "bad", t: "Not enough cells for " + n + ". Short by " + cells(per * n - tot) + " cells; expand one more passage first." });
+        else out.msgs.push({ c: "good", t: "Enough cells for " + n + ", with " + cells(tot - per * n) + " to spare." });
+      }
+      return out;
+    }
+  },
+  {
+    id: "c1v1", group: "plan", ic: "C₁", title: "C1V1 = C2V2", d: "Any simple dilution: solve for one missing value",
+    modes: [{ id: "v1", l: "Find V1" }, { id: "c2", l: "Find C2" }, { id: "v2", l: "Find V2" }],
+    fields: [
+      { id: "c1", label: "C1 (stock)", u: "any", def: () => 3.0 },
+      { id: "v1", label: "V1 (volume taken)", u: "mL", def: () => 100 },
+      { id: "c2", label: "C2 (final)", u: "any", def: () => 0.3 },
+      { id: "v2", label: "V2 (final volume)", u: "mL", def: () => 800 }
+    ],
+    formula: "C1 × V1 = C2 × V2",
+    how: ["C1 and C2 in the same unit; V1 and V2 in the same unit.", "The field you solve for is ignored."],
+    calc(v, mode) {
+      const out = { res: [], msgs: [] };
+      if (mode === "v1") { if (!(v.c1 > 0 && v.c2 > 0 && v.v2 > 0)) return { err: "Enter C1, C2 and V2." }; const r = v.c2 * v.v2 / v.c1; out.res.push({ big: true, l: "V1", v: sig(r) + " mL", i: pipetting(r) }); out.res.push({ l: "Diluent", v: sig(v.v2 - r) + " mL" }); if (v.c2 > v.c1) out.msgs.push({ c: "bad", t: "C2 is higher than C1; a dilution can't concentrate." }); }
+      if (mode === "c2") { if (!(v.c1 > 0 && v.v1 > 0 && v.v2 > 0)) return { err: "Enter C1, V1 and V2." }; out.res.push({ big: true, l: "C2", v: sig(v.c1 * v.v1 / v.v2) }); if (v.v1 > v.v2) out.msgs.push({ c: "bad", t: "V1 is larger than V2." }); }
+      if (mode === "v2") { if (!(v.c1 > 0 && v.v1 > 0 && v.c2 > 0)) return { err: "Enter C1, V1 and C2." }; const r = v.c1 * v.v1 / v.c2; out.res.push({ big: true, l: "V2", v: sig(r) + " mL" }); out.res.push({ l: "Diluent to add", v: sig(r - v.v1) + " mL" }); }
+      return out;
+    }
+  }
+];
+
+/* ---------- tools screen ---------- */
+let openTool = null;
+function renderToolList() {
+  ["main", "plan"].forEach(g => {
+    $("#tools-" + g).innerHTML = TOOLS.filter(t => t.group === g).map(t =>
+      `<button class="tool" data-tool="${t.id}"><span class="ic">${t.ic}</span><span><b>${esc(t.title)}</b><span class="d">${esc(t.d)}</span></span><span class="chev">›</span></button>`).join("");
+  });
+  document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => showTool(b.dataset.tool));
+}
+function showTool(id) {
+  openTool = TOOLS.find(t => t.id === id);
+  const t = openTool, st = store.inputs[id] || (store.inputs[id] = {});
+  const mode = st._mode || (t.modes ? t.modes[0].id : null);
+  const hide = t.id === "c1v1" ? mode : null;
+  const fields = t.fields.filter(fl => fl.id !== hide).map(fl => {
+    const val = st[fl.id] !== undefined ? st[fl.id] : fl.def();
+    const chip = fl.set ? (Sconf(fl.set) ? "" : `<span class="chip">placeholder</span>`) : "";
+    return `<div class="field"><label for="f-${fl.id}">${esc(fl.label)} ${chip}</label><div class="inp"><input id="f-${fl.id}" type="number" inputmode="decimal" step="any" value="${val}"><span class="u">${fl.u}</span></div></div>`;
+  }).join("");
+  const formula = typeof t.formula === "string" ? t.formula : t.formula[mode];
+  $("#toolview").innerHTML = `
+    <button class="back" id="back">‹ All tools</button>
+    <div class="card">
+      <div><div class="label">${t.group === "main" ? "At the hood" : "Planning"}</div><h2>${esc(t.title)}</h2></div>
+      ${t.modes ? `<div class="seg" role="group">${t.modes.map(m => `<button data-mode="${m.id}" aria-pressed="${m.id === mode}">${m.l}</button>`).join("")}</div>` : ""}
+      <div class="fields">${fields}</div>
+      <div class="row"><button class="btn" id="reset-in">Reset to lab values</button></div>
+    </div>
+    <div class="card" id="out"></div>
+    <div class="card">
+      <div class="label">Formula</div>
+      <div class="formula">${esc(formula)}</div>
+      <details class="how"><summary>Notes</summary><div><ul class="list">${t.how.map(h => `<li>${esc(h)}</li>`).join("")}</ul></div></details>
+    </div>`;
+  $("#toollist").hidden = true; $("#toolview").hidden = false;
+  $("#back").onclick = closeTool;
+  $("#reset-in").onclick = () => { store.inputs[id] = { _mode: mode }; save(); showTool(id); };
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st._mode = b.dataset.mode; save(); showTool(id); });
+  document.querySelectorAll("#toolview input").forEach(i => i.addEventListener("input", () => { st[i.id.slice(2)] = i.value; save(); compute(); }));
+  compute();
+  window.scrollTo(0, 0);
+}
+function compute() {
+  const t = openTool, st = store.inputs[t.id] || {}, mode = st._mode || (t.modes ? t.modes[0].id : null);
+  const v = {};
+  t.fields.forEach(fl => { const el = document.getElementById("f-" + fl.id); v[fl.id] = el ? parseFloat(el.value) : NaN; });
+  const r = t.calc(v, mode), out = $("#out");
+  if (r.err) { out.innerHTML = `<div class="label">Result</div><div class="msg bad">${esc(r.err)}</div>`; return; }
+  out.innerHTML = `<div class="label">Result</div>
+    <div class="results">${r.res.map(x => `<div class="res${x.big ? " big" : ""}"><span>${esc(x.l)}</span><b>${esc(x.v)}</b>${x.i ? `<i>${esc(x.i)}</i>` : ""}</div>`).join("")}</div>
+    ${r.msgs.map(m => `<div class="msg ${m.c}">${esc(m.t)}</div>`).join("")}`;
+}
+function closeTool() { openTool = null; $("#toolview").hidden = true; $("#toollist").hidden = false; window.scrollTo(0, 0); }
+
+/* ---------- protocol ---------- */
+const STEPS = [
+  { n: "0", side: true, name: "Prepare", s: "Medium, flasks, cabinet",
+    lab: ["Ready-made medium with phenol red, pre-warmed in the incubator", "New 2 L vented shake flasks, same type as current ones", "Standard BSC, full aseptic sequence: disinfect gloves, oversleeves and every item going in"],
+    why: ["Cold medium stresses cells and slows recovery", "Most contaminations come in on items carried into the cabinet"],
+    confirm: ["Medium name and supplier"] },
+  { n: "1", name: "Inspect", s: "Quick visual go / no-go",
+    lab: ["Look at each flask before opening: medium colour, turbidity, clumps, foam, cap and filter, label", "No microscope step; the count is the real check"],
+    why: ["Catches gross contamination the counter won't show", "A suspicious flask is never opened in the BSC"],
+    confirm: ["What to do with a suspicious flask (flag, isolate, inactivate)"] },
+  { n: "2", name: "Sample", s: "Swirl, take ~200 µL",
+    lab: ["Swirl to homogenize", "Pipette ~200 µL straight from the open flask for the Vi-CELL BLU"],
+    why: ["Cells settle in minutes; an unswirled sample misreads density"], confirm: [] },
+  { n: "3", name: "Count", s: "Vi-CELL BLU: VCD and viability",
+    lab: ["Count immediately", "Record VCD and viability", "One count per flask; flasks run as 2–3 replicates", "~95% viability is good"],
+    why: ["VCD sets the dilution; viability tracks culture health"],
+    confirm: ["Passage VCD window", "Viability action threshold"] },
+  { n: "4", name: "Calculate", s: "Culture and medium volumes",
+    lab: ["ELN template normally; by hand while it's broken (use the Routine split tool)", "Each replicate calculated independently"],
+    why: ["A fixed seeding density keeps passages comparable and in exponential growth"],
+    confirm: ["Target seeding density", "Whether final volume changes with passage number"] },
+  { n: "5", name: "Seed", s: "Medium first, then cells",
+    lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the lineage convention"],
+    why: ["Cells land in a full volume, not a thin film", "The label traces each flask to its parent"],
+    confirm: ["Exact labeling format"] },
+  { n: "6", name: "Incubate", s: "Shaking incubator, 3–4 days",
+    lab: ["Dedicated shaking incubator: temperature, CO₂, humidity, rpm, throw", "Alarm beeps if rpm can't reach setpoint"],
+    why: ["Shaking keeps cells suspended and drives oxygen transfer; 800 mL in 2 L leaves the headspace for it"],
+    confirm: ["Setpoints (°C, % CO₂, % RH, rpm, throw in mm)"] },
+  { n: "7", side: true, name: "Document and close", s: "ELN, waste, cabinet",
+    lab: ["ELN: flask/sample IDs (passage number), VCD, viability, volumes, medium lot, operator", "Keep old flasks for two passages: three generations in the incubator", "Oldest generation inactivated with Virkon S in a jerrycan with water, then disposed of", "BSC disinfected, closed, UV"],
+    why: ["Backups let you fall back if the newest flask is lost", "Passage number matters because cell age affects productivity"],
+    confirm: ["Maximum passage / days after thaw", "Thaw frequency and cell bank", "Virkon S concentration and contact time"] }
+];
+function renderProtocol() {
+  const li = a => `<ul class="list">${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  $("#pv-steps-view").innerHTML = STEPS.map((s, i) => `
+    ${i === 1 ? '<div class="loopnote">↻ loop: steps 1–6 repeat every 3–4 days</div>' : ""}
+    <details class="step${s.side ? " side" : ""}">
+      <summary><span class="n">${s.n}</span><span><b>${esc(s.name)}</b><span class="s">${esc(s.s)}</span></span><span class="chev">›</span></summary>
+      <div class="body">
+        <div><div class="label">In our lab</div>${li(s.lab)}</div>
+        <div><div class="label">Why</div>${li(s.why)}</div>
+        ${s.confirm.length ? `<div class="confirm"><div class="label">To confirm</div>${li(s.confirm)}</div>` : ""}
+      </div>
+    </details>`).join("");
+  renderChecklist();
+}
+const CHECK = [
+  { g: "Before", items: ["Medium pre-warmed in the incubator", "New 2 L flasks labeled", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
+  { g: "Per flask", items: ["Visual check: colour, turbidity, clumps, cap/filter", "Swirl, sample ~200 µL", "Count: VCD and viability", "Viability above threshold, VCD in window", "Calculate culture and medium volumes", "Medium into the new flask", "Culture into the new flask", "Cap closed, flask into shaking incubator"] },
+  { g: "After", items: ["ELN: IDs, VCD, viability, volumes, medium lot", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
+];
+function renderChecklist() {
+  let k = 0, total = 0, done = 0;
+  const html = CHECK.map(g => `<div class="grp">${g.g}</div>` + g.items.map(it => { const id = "c" + (k++); total++; const on = !!store.check[id]; if (on) done++; return `<label><input type="checkbox" data-c="${id}" ${on ? "checked" : ""}><span>${esc(it)}</span></label>`; }).join("")).join("");
+  $("#pv-check-view").innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><div><div class="label">Bench checklist</div><b id="ck-count">${done} / ${total}</b></div><button class="btn" id="ck-reset">Reset</button></div>
+      <div class="progress"><i id="ck-bar" style="width:${done / total * 100}%"></i></div>
+      <div class="check">${html}</div>
+    </div>`;
+  document.querySelectorAll("[data-c]").forEach(c => c.onchange = () => { store.check[c.dataset.c] = c.checked; save(); const d = Object.values(store.check).filter(Boolean).length; $("#ck-count").textContent = d + " / " + total; $("#ck-bar").style.width = d / total * 100 + "%"; });
+  $("#ck-reset").onclick = () => { store.check = {}; save(); renderChecklist(); };
+}
+$("#pv-steps").onclick = () => setPV("steps");
+$("#pv-check").onclick = () => setPV("check");
+function setPV(w) { $("#pv-steps").setAttribute("aria-pressed", w === "steps"); $("#pv-check").setAttribute("aria-pressed", w === "check"); $("#pv-steps-view").hidden = w !== "steps"; $("#pv-check-view").hidden = w !== "check"; }
+
+/* ---------- learn ---------- */
+function renderLearn() {
+  const lo = S("seed"), a = S("passMin"), b = S("passMax");
+  $("#s-learn").innerHTML = `
+    <div class="card concept">
+      <div class="label">The core idea</div>
+      <h2>Why we passage</h2>
+      <p>Cells in suspension grow exponentially until they run out of nutrients and oxygen and accumulate waste. Passaging dilutes them back into fresh medium before that happens, so they stay healthy, dividing and predictable. In gene therapy upstream, this routine is the seed train: it expands cells from a thawed vial to the numbers needed for a transfection bioreactor.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Growth curve</div>
+      <h3>Stay in the exponential phase</h3>
+      <div class="svgwrap">
+        <svg viewBox="0 0 340 190" role="img" aria-labelledby="gc-t"><title id="gc-t">Growth curve with lag, exponential, stationary and decline phases; passage happens late in the exponential phase.</title>
+          <rect x="178" y="22" width="62" height="130" fill="var(--teal-soft)"/>
+          <line x1="36" y1="152" x2="326" y2="152" stroke="var(--line)" stroke-width="1"/>
+          <line x1="36" y1="152" x2="36" y2="14" stroke="var(--line)" stroke-width="1"/>
+          <path d="M36 140 C70 139 86 137 104 128 C140 108 170 60 210 40 C240 27 262 24 286 25 C300 26 312 32 324 44" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+          <text x="209" y="16" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--teal)">passage window</text>
+          <text x="58" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">lag</text>
+          <text x="146" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">exponential</text>
+          <text x="268" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">stationary</text>
+          <text x="316" y="170" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">decline</text>
+          <text x="186" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">time → (VCD on a log scale)</text>
+        </svg>
+      </div>
+      <p class="small">Seed at about ${sig(lo)} × 10⁶/mL, passage in the ${sig(a)}–${sig(b)} × 10⁶/mL window. Wait too long and cells enter stationary phase: viability drops, aggregates form and they recover more slowly after the split.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Inspection</div>
+      <h3>Reading phenol red</h3>
+      <div class="phrow">
+        <div class="ph"><i style="background:var(--ph-acid)"></i><b>Yellow</b>Acidic. Overgrowth, or bacteria if sudden with turbidity.</div>
+        <div class="ph"><i style="background:var(--ph-ok)"></i><b>Red</b>Normal pH. Proceed.</div>
+        <div class="ph"><i style="background:var(--ph-alk)"></i><b>Purple</b>Alkaline. CO₂ loss: cap, wet filter, gas supply.</div>
+      </div>
+      <p class="small muted">Also: evenly milky is normal; floating fuzzy balls suggest fungi; large clumps or sticky strands suggest stress or dead-cell DNA.</p>
+    </div>
+
+    <div class="card concept">
+      <div class="label">Counting</div>
+      <h3>VCD and viability</h3>
+      <p>The Vi-CELL BLU mixes the sample with trypan blue. Dead cells have leaky membranes and take up the dye; live cells exclude it. Image analysis then gives viable cell density (VCD, live cells per mL) and viability (live / total × 100).</p>
+      <p>Always calculate splits with the viable density, not the total. Big clumps are miscounted, so a clumpy culture gives an unreliable VCD.</p>
+    </div>
+
+    <div class="card concept">
+      <div class="label">Shake flasks</div>
+      <h3>Oxygen, volume and shaking</h3>
+      <p>Cells get oxygen through the liquid surface that the orbital motion spreads along the flask wall. That's why a 2 L flask holds only 800 mL (40% of nominal, near the upper end of the usual 20–40%). More volume means less surface per cell and less oxygen.</p>
+      <p>rpm and throw (orbital diameter) set mixing and oxygen transfer. More shaking means more oxygen but more shear stress. The vented cap lets CO₂ in to keep the bicarbonate-buffered medium at the right pH.</p>
+    </div>
+
+    <div class="card concept">
+      <div class="label">Cell age</div>
+      <h3>Passage number and doublings</h3>
+      <p>Every passage adds population doublings. Over time cells drift: growth rate, transfection efficiency and AAV productivity can change. That's why labs set a maximum passage number or number of days after thaw, then restart from a fresh vial of the working cell bank.</p>
+      <p>Cumulative population doublings (CPD) is the most precise measure of cell age. The growth tool computes it.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Where this fits</div>
+      <h3>The seed train for AAV</h3>
+      <div class="train">
+        <span class="b">WCB vial thaw</span><span class="a">→</span>
+        <span class="b me">Shake flask passages</span><span class="a">→</span>
+        <span class="b">N-1 seed</span><span class="a">→</span>
+        <span class="b">Production bioreactor</span><span class="a">→</span>
+        <span class="b">Triple transfection</span><span class="a">→</span>
+        <span class="b">Harvest</span>
+      </div>
+      <p class="small">Triple transfection brings three plasmids: the transgene between ITRs, Rep/Cap, and helper genes from adenovirus. Cells transfect best when they are healthy and in exponential growth at the right density, which is why the passaging routine matters downstream.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Key numbers in this lab</div>
+      <table class="kv"><tbody>
+        ${SETTINGS.map(s => `<tr><td>${esc(s.t)}</td><td>${sig(S(s.id))} ${s.u} ${Sconf(s.id) ? "" : '<span class="chip">to confirm</span>'}</td></tr>`).join("")}
+        <tr><td>Vi-CELL sample</td><td>~200 µL</td></tr>
+        <tr><td>Pipettes</td><td>50 and 100 mL</td></tr>
+        <tr><td>Generations kept</td><td>3 (current + 2 backups)</td></tr>
+      </tbody></table>
+      <p class="small muted">Edit these in Lab values.</p>
+    </div>
+
+    <div class="card">
+      <div class="label">Glossary</div>
+      <dl class="gloss" style="margin:0">
+        <dt>VCD</dt><dd>Viable cell density, live cells per mL (here ×10⁶/mL).</dd>
+        <dt>TCD</dt><dd>Total cell density, live + dead.</dd>
+        <dt>Viability</dt><dd>VCD / TCD × 100.</dd>
+        <dt>Td</dt><dd>Doubling time, hours for the population to double.</dd>
+        <dt>PD / CPD</dt><dd>Population doublings in one passage / accumulated since thaw.</dd>
+        <dt>Split ratio</dt><dd>Final volume / culture volume carried over (e.g. 1:10).</dd>
+        <dt>Working volume</dt><dd>Culture actually in the flask, well below its nominal size.</dd>
+        <dt>Throw</dt><dd>Diameter of the shaker's orbit (e.g. 25 or 50 mm).</dd>
+        <dt>N-1</dt><dd>The seed vessel that inoculates the production bioreactor.</dd>
+        <dt>MCB / WCB</dt><dd>Master and working cell banks; routine thaws come from the WCB.</dd>
+        <dt>ELN</dt><dd>Electronic lab notebook.</dd>
+        <dt>Virkon S</dt><dd>Oxidizing disinfectant used to inactivate cultures before disposal.</dd>
+      </dl>
+    </div>`;
+}
+
+/* ---------- settings ---------- */
+function renderSettings() {
+  $("#s-settings").innerHTML = `
+    <div class="card">
+      <div><div class="label">Lab values</div><h2>Your lab's numbers</h2></div>
+      <p class="small muted">Calculators start from these. Placeholders are typical values, not your lab's; tick "Confirmed" once you've checked them in the SOP. Saved on this device only.</p>
+      <div>${SETTINGS.map(s => `
+        <div class="set">
+          <div><div class="t">${esc(s.t)}</div><div class="h">${esc(s.h)}</div></div>
+          <div class="inp"><input id="s-${s.id}" type="number" inputmode="decimal" step="any" value="${S(s.id)}"><span class="u">${s.u}</span></div>
+          <label class="conf"><input type="checkbox" id="sc-${s.id}" ${Sconf(s.id) ? "checked" : ""}> Confirmed in the lab</label>
+        </div>`).join("")}</div>
+      <div class="row"><button class="btn danger" id="s-reset">Restore placeholders</button></div>
+    </div>
+    <div class="card">
+      <div class="label">Notes</div>
+      <label for="s-notes" class="small muted">Things learned at the bench, questions for the team.</label>
+      <textarea id="s-notes" placeholder="e.g. Ask Bassem about the passage window">${esc(store.notes)}</textarea>
+    </div>`;
+  SETTINGS.forEach(s => {
+    const put = () => { store.settings[s.id] = { val: $("#s-" + s.id).value, conf: $("#sc-" + s.id).checked }; save(); updateTop(); };
+    $("#s-" + s.id).addEventListener("input", put);
+    $("#sc-" + s.id).addEventListener("change", put);
+  });
+  $("#s-notes").addEventListener("input", e => { store.notes = e.target.value; save(); });
+  let armed = false;
+  $("#s-reset").onclick = e => {
+    if (!armed) { armed = true; e.target.textContent = "Tap again to confirm"; setTimeout(() => { armed = false; if (e.target.isConnected) e.target.textContent = "Restore placeholders"; }, 3000); return; }
+    store.settings = {}; save(); renderSettings(); updateTop();
+  };
+}
+
+/* ---------- nav ---------- */
+function updateTop() {
+  const n = SETTINGS.filter(s => !Sconf(s.id)).length;
+  $("#topsub").innerHTML = n ? `<span class="chip">${n} to confirm</span>` : `<span class="chip ok">All confirmed</span>`;
+}
+function tab(name) {
+  document.querySelectorAll("[data-screen]").forEach(s => s.hidden = s.dataset.screen !== name);
+  document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === name ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  if (name === "learn") renderLearn();
+  if (name === "settings") renderSettings();
+  if (name === "tools" && openTool) showTool(openTool.id);
+  try { sessionStorage.setItem("hekbench.tab", name); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.tab === "tools" && b.getAttribute("aria-current")) closeTool(); tab(b.dataset.tab); });
+
+renderToolList();
+renderProtocol();
+updateTop();
+let startTab = "tools";
+try { startTab = sessionStorage.getItem("hekbench.tab") || "tools"; } catch (e) {}
+tab(["tools", "protocol", "learn", "settings"].includes(startTab) ? startTab : "tools");
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
