@@ -1,5 +1,5 @@
 // Network-first for the app itself (so updates arrive when online), cache fallback offline.
-const CACHE = "passage-bench-v1";
+const CACHE = "passage-bench-v2";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

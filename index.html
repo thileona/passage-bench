@@ -181,10 +181,53 @@ textarea { width: 100%; min-height: 110px; font: 400 15px/1.5 var(--body); color
 
 /* tab bar */
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 10 }
-.tabbar .in { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 4px }
+.tabbar .in { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 2px }
 .tabbar button { background: none; border: none; color: var(--muted); font: 600 12px/1.1 var(--body); padding: 6px 2px 4px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px }
 .tabbar button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
 .tabbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft) }
+/* labels */
+.idlist { display: flex; flex-direction: column; gap: 8px }
+.idrow { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; background: var(--sunk); border-radius: 10px; padding: 10px 10px 10px 12px }
+.idrow code, code.id { font: 500 15px/1.35 var(--mono); overflow-wrap: anywhere; color: var(--fg) }
+.idrow.big { background: var(--teal-soft) }
+.idrow.big code { font-size: 17px; color: var(--teal) }
+.idrow small { display: block; font: 400 12px/1.3 var(--body); color: var(--muted); margin-top: 2px; word-break: normal }
+.copy { font: 600 13px/1 var(--body); color: var(--teal); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; white-space: nowrap }
+.copy.done { color: var(--good); border-color: var(--good) }
+.field input[type=text], .field input[type=date], .field select { width: 100%; font: 500 17px/1.2 var(--mono); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; text-transform: uppercase }
+.field input[type=date], .field select { text-transform: none; font-size: 16px; font-family: var(--body) }
+.field input:disabled { opacity: .45 }
+.seg.wrap4 { grid-auto-flow: row; grid-template-columns: repeat(4, minmax(0,1fr)) }
+@media (max-width: 380px) { .seg.wrap4 { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+.anatomy { display: flex; flex-wrap: wrap; gap: 4px; font: 500 14px/1 var(--mono) }
+.anatomy span { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 7px; border-radius: 8px; background: var(--sunk) }
+.anatomy span i { font: 400 10px/1.1 var(--body); font-style: normal; color: var(--muted); text-align: center; max-width: 76px }
+.anatomy span.p { background: var(--warn-soft); color: var(--warn) }
+.anatomy span.c { background: var(--teal-soft); color: var(--teal) }
+.anatomy span.d { background: var(--accent-soft); color: var(--accent) }
+.flask-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px }
+.flask-card.gen0 { border-color: var(--teal) }
+.flask-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted) }
+.pill { font: 500 11px/1 var(--mono); border-radius: 999px; padding: 4px 8px; background: var(--sunk); color: var(--muted); white-space: nowrap }
+.pill.active { background: var(--teal-soft); color: var(--teal) }
+.pill.backup { background: var(--sunk); color: var(--muted) }
+.pill.discard { background: var(--warn-soft); color: var(--warn) }
+.pill.old { background: var(--bad-soft); color: var(--bad) }
+.mini { display: flex; flex-wrap: wrap; gap: 6px }
+.mini button { font: 600 13px/1 var(--body); color: var(--fg); background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer }
+.mini button.primary { color: var(--teal); border-color: var(--teal) }
+.mini button.danger { color: var(--bad) }
+.empty { border: 1px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; color: var(--muted); font-size: 14px }
+.rules h3 { margin-top: 4px }
+.fmt { font: 500 14px/1.4 var(--mono); background: var(--sunk); border-radius: 8px; padding: 8px 10px; overflow-x: auto; white-space: nowrap }
+.fmt-ex { font: 400 13px/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere }
+.rule-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--line) }
+.rule-item:last-child { border-bottom: none }
+.rule-item b { font-weight: 600 }
+table.dec { width: 100%; border-collapse: collapse; font-size: 14px }
+table.dec td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top }
+table.dec td:first-child { font: 500 14px/1.3 var(--mono); white-space: nowrap; width: 1%; padding-right: 12px }
+table.dec tr:last-child td { border-bottom: none }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
 </style>
 <style>
@@ -214,6 +257,20 @@ body { margin: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)) }
     <div id="toolview" class="stack" hidden></div>
   </section>
 
+  <!-- LABELS -->
+  <section id="s-labels" data-screen="labels" class="stack" hidden>
+    <div class="seg wrap4" role="group" aria-label="Labels view">
+      <button data-lv="flasks" aria-pressed="true">My flasks</button>
+      <button data-lv="build" aria-pressed="false">Build</button>
+      <button data-lv="decode" aria-pressed="false">Decode</button>
+      <button data-lv="rules" aria-pressed="false">Rules</button>
+    </div>
+    <div id="lv-flasks" class="stack"></div>
+    <div id="lv-build" class="stack" hidden></div>
+    <div id="lv-decode" class="stack" hidden></div>
+    <div id="lv-rules" class="stack" hidden></div>
+  </section>
+
   <!-- PROTOCOL -->
   <section id="s-protocol" data-screen="protocol" class="stack" hidden>
     <div class="seg" role="group" aria-label="Protocol view">
@@ -234,6 +291,7 @@ body { margin: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)) }
 <nav class="tabbar" aria-label="Sections">
   <div class="in">
     <button data-tab="tools" aria-current="page"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h2M16 15v3"/></svg>Tools</button>
+    <button data-tab="labels"><svg viewBox="0 0 24 24"><path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg>Labels</button>
     <button data-tab="protocol"><svg viewBox="0 0 24 24"><path d="M9 4h6M10 4v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V4"/><path d="M7.5 15h9"/></svg>Protocol</button>
     <button data-tab="learn"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>Learn</button>
     <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Lab values</button>
@@ -250,6 +308,9 @@ store.settings = store.settings || {};
 store.inputs = store.inputs || {};
 store.check = store.check || {};
 store.notes = store.notes || "";
+store.flasks = store.flasks || [];
+store.ident = store.ident || {};
+store.lab = store.lab || {};
 
 /* ---------- lab values (defaults = placeholders until confirmed) ---------- */
 const SETTINGS = [
@@ -568,9 +629,9 @@ const STEPS = [
     why: ["A fixed seeding density keeps passages comparable and in exponential growth"],
     confirm: ["Target seeding density", "Whether final volume changes with passage number"] },
   { n: "5", name: "Seed", s: "Medium first, then cells",
-    lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the lineage convention"],
+    lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the passage ID: XX-GKbb-Vv-[parent tag]-Pp-[child tag], e.g. 99-GK78-V4-ZBT01-P3-TLE01 (Labels tab builds it)"],
     why: ["Cells land in a full volume, not a thin film", "The label traces each flask to its parent"],
-    confirm: ["Exact labeling format"] },
+    confirm: [] },
   { n: "6", name: "Incubate", s: "Shaking incubator, 3–4 days",
     lab: ["Dedicated shaking incubator: temperature, CO₂, humidity, rpm, throw", "Alarm beeps if rpm can't reach setpoint"],
     why: ["Shaking keeps cells suspended and drives oxygen transfer; 800 mL in 2 L leaves the headspace for it"],
@@ -595,9 +656,9 @@ function renderProtocol() {
   renderChecklist();
 }
 const CHECK = [
-  { g: "Before", items: ["Medium pre-warmed in the incubator", "New 2 L flasks labeled", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
+  { g: "Before", items: ["Medium pre-warmed in the incubator", "New 2 L flasks labeled with passage IDs (Labels tab)", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
   { g: "Per flask", items: ["Visual check: colour, turbidity, clumps, cap/filter", "Swirl, sample ~200 µL", "Count: VCD and viability", "Viability above threshold, VCD in window", "Calculate culture and medium volumes", "Medium into the new flask", "Culture into the new flask", "Cap closed, flask into shaking incubator"] },
-  { g: "After", items: ["ELN: IDs, VCD, viability, volumes, medium lot", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
+  { g: "After", items: ["ELN: flask and sample IDs, VCD, viability, volumes, medium lot", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
 ];
 function renderChecklist() {
   let k = 0, total = 0, done = 0;
@@ -715,7 +776,11 @@ function renderLearn() {
         <dt>Throw</dt><dd>Diameter of the shaker's orbit (e.g. 25 or 50 mm).</dd>
         <dt>N-1</dt><dd>The seed vessel that inoculates the production bioreactor.</dd>
         <dt>MCB / WCB</dt><dd>Master and working cell banks; routine thaws come from the WCB.</dd>
-        <dt>ELN</dt><dd>Electronic lab notebook.</dd>
+        <dt>ELN</dt><dd>Electronic lab notebook (ENABLE in GTDSPS).</dd>
+        <dt>GK / V / P</dt><dd>Cell bank / vial / passage, in lab IDs.</dd>
+        <dt>Parent and child tag</dt><dd>Operator initials + 2-digit vessel number, e.g. TLE01. Parent = flask the cells came from, child = flask being made.</dd>
+        <dt>Day of culture</dt><dd>Days since inoculation; inoculation day is always day 0.</dd>
+        <dt>GTDSPS</dt><dd>Gene Therapy Drug Substance Process Sciences.</dd>
         <dt>Virkon S</dt><dd>Oxidizing disinfectant used to inactivate cultures before disposal.</dd>
       </dl>
     </div>`;
@@ -724,6 +789,16 @@ function renderLearn() {
 /* ---------- settings ---------- */
 function renderSettings() {
   $("#s-settings").innerHTML = `
+    <div class="card">
+      <div><div class="label">Labels</div><h2>You and your default line</h2></div>
+      <p class="small muted">Used to prefill the label builder. Initials must match the Initials register.</p>
+      <div class="fields">
+        <div class="field"><label for="id-init">Your initials</label><input id="id-init" type="text" maxlength="3" autocapitalize="characters" value="${escA(store.ident.init || "TLE")}"></div>
+        <div class="field"><label for="id-proj">Project code (XX)</label><input id="id-proj" type="text" inputmode="numeric" maxlength="2" placeholder="e.g. 99" value="${escA(store.ident.proj || "")}"></div>
+        <div class="field"><label for="id-gk">Cell bank no.</label><input id="id-gk" type="text" inputmode="numeric" maxlength="3" placeholder="e.g. 78" value="${escA(store.ident.gk || "")}"></div>
+        <div class="field"><label for="id-vial">Vial no.</label><input id="id-vial" type="text" inputmode="numeric" maxlength="3" placeholder="e.g. 4" value="${escA(store.ident.vial || "")}"></div>
+      </div>
+    </div>
     <div class="card">
       <div><div class="label">Lab values</div><h2>Your lab's numbers</h2></div>
       <p class="small muted">Calculators start from these. Placeholders are typical values, not your lab's; tick "Confirmed" once you've checked them in the SOP. Saved on this device only.</p>
@@ -745,12 +820,476 @@ function renderSettings() {
     $("#s-" + s.id).addEventListener("input", put);
     $("#sc-" + s.id).addEventListener("change", put);
   });
+  [["init", "id-init"], ["proj", "id-proj"], ["gk", "id-gk"], ["vial", "id-vial"]].forEach(([k, id]) => $("#" + id).addEventListener("input", e => { store.ident[k] = norm(e.target.value); save(); }));
   $("#s-notes").addEventListener("input", e => { store.notes = e.target.value; save(); });
   let armed = false;
   $("#s-reset").onclick = e => {
     if (!armed) { armed = true; e.target.textContent = "Tap again to confirm"; setTimeout(() => { armed = false; if (e.target.isConnected) e.target.textContent = "Restore placeholders"; }, 3000); return; }
     store.settings = {}; save(); renderSettings(); updateTop();
   };
+}
+
+/* ---------- labels: GTDSPS naming conventions ---------- */
+const escA = s => esc(s).replace(/"/g, "&quot;");
+const pad2 = n => String(n).padStart(2, "0");
+const norm = x => String(x == null ? "" : x).trim().toUpperCase().replace(/_/g, "-").replace(/\s+/g, "");
+const todayISO = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+function dayOfCulture(inoc, on) { if (!inoc) return NaN; const a = new Date(inoc + "T12:00:00"), b = new Date((on || todayISO()) + "T12:00:00"); return Math.round((b - a) / 86400000); }
+function fmtDate(iso) { if (!iso) return "–"; const d = new Date(iso + "T12:00:00"); return isNaN(d) ? "–" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+const ME = () => norm(store.ident.init || "TLE");
+
+const RE_PASS = /^(\d{2})-GK(\d{2,3})-V(\d{1,3})(?:-([A-Z]{2,4})(\d{2}))?-P(\d{1,2})-([A-Z]{2,4})(\d{2})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/;
+function parsePassage(id) {
+  const m = norm(id).match(RE_PASS); if (!m) return null;
+  return { proj: m[1], gk: m[2], vial: m[3], pInit: m[4] || "", pNo: m[5] || "", p: +m[6], cInit: m[7], cNo: m[8], day: m[9], s: m[10] };
+}
+function passageId(o) { return `${o.proj}-GK${o.gk}-V${o.vial}${o.p > 0 && o.parent ? "-" + o.parent : ""}-P${o.p}-${o.child}`; }
+const baseOf = o => passageId({ proj: o.proj, gk: o.gk, vial: o.vial, p: o.p, parent: o.pInit + o.pNo, child: o.cInit + o.cNo });
+const sampleName = (base, day, s) => base + "-" + day + (s > 1 ? "-" + s : "");
+const xt = id => id.replace(/-/g, "_");
+const lineage = o => `${o.proj}-GK${o.gk}-V${o.vial}`;
+function nextChildNo(proj, gk, vial, p, init) {
+  let mx = 0;
+  store.flasks.forEach(f => { const o = parsePassage(f.id); if (o && o.proj === proj && o.gk === gk && o.vial === vial && o.p === p && o.cInit === init) mx = Math.max(mx, +o.cNo); });
+  return mx + 1;
+}
+function idRow(text, sub, big) {
+  return `<div class="idrow${big ? " big" : ""}"><div style="min-width:0"><code>${esc(text).replace(/([-_])/g, "$1<wbr>")}</code>${sub ? `<small>${esc(sub)}</small>` : ""}</div><button class="copy" data-copy="${escA(text)}">Copy</button></div>`;
+}
+function anatomy(segs) { return `<div class="anatomy">${segs.map(s => `<span class="${s.c || ""}">${esc(s.t)}<i>${esc(s.i)}</i></span>`).join("")}</div>`; }
+function passAnatomy(o, day, s) {
+  const a = [{ t: o.proj, i: "project" }, { t: "GK" + o.gk, i: "cell bank" }, { t: "V" + o.vial, i: "vial" }];
+  if (o.p > 0 && o.parent) a.push({ t: o.parent, i: "parent flask", c: "p" });
+  a.push({ t: "P" + o.p, i: "passage" }, { t: o.child, i: "this flask", c: "c" });
+  if (day !== undefined && day !== null && day !== "") a.push({ t: String(day), i: "day", c: "d" });
+  if (s > 1) a.push({ t: String(s), i: "sample of day", c: "d" });
+  return anatomy(a);
+}
+
+/* copy (delegated) */
+function copyText(t, btn) {
+  const done = () => { if (!btn) return; const l = btn.textContent; btn.textContent = "Copied"; btn.classList.add("done"); setTimeout(() => { btn.textContent = l === "Copied" ? "Copy" : l; btn.classList.remove("done"); }, 1300); };
+  const fb = () => { const ta = document.createElement("textarea"); ta.value = t; ta.setAttribute("readonly", ""); ta.style.position = "absolute"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (e) {} ta.remove(); };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fb); else fb(); } catch (e) { fb(); }
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-copy]"); if (b) copyText(b.dataset.copy, b); });
+
+/* view switching */
+function setLV(v) {
+  store.lab.lv = v; save();
+  document.querySelectorAll("[data-lv]").forEach(b => b.setAttribute("aria-pressed", b.dataset.lv === v));
+  ["flasks", "build", "decode", "rules"].forEach(k => $("#lv-" + k).hidden = k !== v);
+  if (v === "flasks") renderFlasks();
+  if (v === "build") renderBuild();
+  if (v === "decode") renderDecode();
+  if (v === "rules") renderRules();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => setLV(b.dataset.lv));
+function renderLabels() { setLV(store.lab.lv || "flasks"); }
+
+/* ---- My flasks ---- */
+let openSample = null;
+function statusOf(o) {
+  let mx = 0; store.flasks.forEach(f => { const q = parsePassage(f.id); if (q && lineage(q) === lineage(o)) mx = Math.max(mx, q.p); });
+  const d = mx - o.p;
+  if (d <= 0) return { c: "active", t: "Active" };
+  if (d === 1) return { c: "backup", t: "Backup" };
+  if (d === 2) return { c: "discard", t: "Backup · discard at next passage" };
+  return { c: "old", t: "Past 2-passage retention" };
+}
+function renderFlasks() {
+  const el = $("#lv-flasks"), today = todayISO();
+  const groups = {};
+  store.flasks.forEach(f => { const o = parsePassage(f.id); const k = o ? lineage(o) : "Other"; (groups[k] = groups[k] || []).push({ f, o }); });
+  Object.values(groups).forEach(g => g.sort((a, b) => (b.o ? b.o.p : 0) - (a.o ? a.o.p : 0) || a.f.id.localeCompare(b.f.id)));
+  const card = ({ f, o }) => {
+    const st = o ? statusOf(o) : { c: "backup", t: "–" };
+    const day = dayOfCulture(f.date), n = (f.samples && f.samples[today]) || 0;
+    let panel = "";
+    if (openSample === f.uid) {
+      const s = n + 1, base = o ? baseOf(o) : f.id, name = sampleName(base, day, s);
+      panel = `<div class="stack" style="gap:8px">
+        <div class="field"><label for="fd-${f.uid}">Inoculated on (day 0)</label><input type="date" id="fd-${f.uid}" data-fdate="${f.uid}" value="${escA(f.date || "")}"></div>
+        ${isFinite(day) && day >= 0 ? idRow(name, `Next sample: day ${day}, sample ${s} of today${s === 1 ? " (first of the day is not numbered)" : ""}`, true) + idRow(xt(name), "Osmotech XT format (underscores)") : `<div class="msg warn">Set the inoculation date to get the day of culture.</div>`}
+        <div class="mini"><button class="primary" data-fa="taken" data-u="${f.uid}">Mark sample as taken</button>${n ? `<button data-fa="undo" data-u="${f.uid}">Undo (${n} today)</button>` : ""}</div>
+      </div>`;
+    }
+    return `<div class="flask-card${st.c === "active" ? " gen0" : ""}">
+      ${idRow(f.id, "", false)}
+      <div class="flask-meta"><span class="pill ${st.c}">${st.t}</span>${o ? `<span class="pill">P${o.p}</span>` : ""}<span>${isFinite(day) ? "day " + day : "no date"} · inoculated ${fmtDate(f.date)}${n ? ` · ${n} sample${n > 1 ? "s" : ""} today` : ""}</span></div>
+      ${panel}
+      <div class="mini">
+        <button data-fa="sample" data-u="${f.uid}">${openSample === f.uid ? "Hide sample" : "Sample name"}</button>
+        ${o ? `<button class="primary" data-fa="passage" data-u="${f.uid}">Passage from this →</button>` : ""}
+        <button class="danger" data-fa="remove" data-u="${f.uid}">Remove</button>
+      </div>
+    </div>`;
+  };
+  el.innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><div class="label">My flasks</div><h2>${store.flasks.length ? store.flasks.length + " flask" + (store.flasks.length > 1 ? "s" : "") : "No flasks yet"}</h2></div>
+      </div>
+      <p class="small muted">Flasks you label in Build land here, with day of culture, the next sample name and a one-tap next passage. Stored on this phone only.</p>
+      <div class="mini"><button class="primary" data-fa="new">+ New passage</button><button data-fa="thaw">+ Thaw (P0)</button></div>
+    </div>
+    ${store.flasks.length ? Object.entries(groups).map(([k, g]) => `<div class="card"><div class="label">${esc(k)}</div><div class="stack" style="gap:10px">${g.map(card).join("")}</div></div>`).join("")
+      : `<div class="empty">Start with <b>+ New passage</b> (or <b>+ Thaw</b> for a vial). Save the labels you build and they'll appear here.</div>`}`;
+}
+$("#lv-flasks").addEventListener("click", e => {
+  const b = e.target.closest("[data-fa]"); if (!b) return;
+  const a = b.dataset.fa, f = store.flasks.find(x => x.uid === b.dataset.u), today = todayISO();
+  if (a === "new" || a === "thaw") { store.lab.pb = freshPB(a === "thaw" ? 0 : 1); store.lab.bm = "pass"; save(); setLV("build"); return; }
+  if (!f) return;
+  if (a === "sample") { openSample = openSample === f.uid ? null : f.uid; renderFlasks(); }
+  if (a === "taken") { f.samples = f.samples || {}; f.samples[today] = (f.samples[today] || 0) + 1; save(); renderFlasks(); }
+  if (a === "undo") { f.samples[today] = Math.max(0, (f.samples[today] || 0) - 1); save(); renderFlasks(); }
+  if (a === "passage") {
+    const o = parsePassage(f.id);
+    const pb = freshPB(o.p + 1); Object.assign(pb, { proj: o.proj, gk: o.gk, vial: o.vial, parent: o.cInit + o.cNo });
+    pb.first = nextChildNo(o.proj, o.gk, o.vial, o.p + 1, norm(pb.init));
+    store.lab.pb = pb; store.lab.bm = "pass"; save(); setLV("build");
+  }
+  if (a === "remove") {
+    if (b.dataset.armed) { store.flasks = store.flasks.filter(x => x !== f); save(); renderFlasks(); return; }
+    b.dataset.armed = "1"; b.textContent = "Tap again to remove"; setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = "Remove"; } }, 3000);
+  }
+});
+$("#lv-flasks").addEventListener("change", e => {
+  const i = e.target.closest("[data-fdate]"); if (!i) return;
+  const f = store.flasks.find(x => x.uid === i.dataset.fdate); if (f) { f.date = i.value; save(); renderFlasks(); }
+});
+
+/* ---- Build ---- */
+function freshPB(p) {
+  return { proj: store.ident.proj || "", gk: store.ident.gk || "", vial: store.ident.vial || "", p: p == null ? 1 : p, parent: "", init: ME(), first: 1, n: 1, date: todayISO(), firstEdited: false };
+}
+function fld(id, label, val, opt = {}) {
+  const type = opt.type || "text";
+  if (type === "select") return `<div class="field${opt.full ? " full" : ""}"><label for="${id}">${esc(label)}</label><select id="${id}">${opt.options.map(o => `<option value="${escA(o.v)}"${o.v === val ? " selected" : ""}>${esc(o.l)}</option>`).join("")}</select></div>`;
+  if (type === "number") return `<div class="field${opt.full ? " full" : ""}"><label for="${id}">${esc(label)}</label><div class="inp"><input id="${id}" type="number" inputmode="numeric" step="1" min="${opt.min ?? 0}" value="${escA(val)}"${opt.disabled ? " disabled" : ""}><span class="u">${opt.u || ""}</span></div></div>`;
+  return `<div class="field${opt.full ? " full" : ""}"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type}" ${opt.num ? 'inputmode="numeric"' : 'autocapitalize="characters"'} ${opt.max ? `maxlength="${opt.max}"` : ""} placeholder="${escA(opt.ph || "")}" value="${escA(val)}"${opt.disabled ? " disabled" : ""} autocomplete="off" spellcheck="false"></div>`;
+}
+function renderBuild() {
+  const bm = store.lab.bm || "pass";
+  const el = $("#lv-build");
+  el.innerHTML = `<div class="seg" role="group" aria-label="What to name">
+      <button data-bm="pass" aria-pressed="${bm === "pass"}">Passage flasks</button>
+      <button data-bm="sample" aria-pressed="${bm === "sample"}">Sample</button>
+      <button data-bm="batch" aria-pressed="${bm === "batch"}">Batch / bioreactor</button>
+    </div><div id="bm-body" class="stack"></div>`;
+  el.querySelectorAll("[data-bm]").forEach(b => b.onclick = () => { store.lab.bm = b.dataset.bm; save(); renderBuild(); });
+  if (bm === "pass") buildPass(); else if (bm === "sample") buildSample(); else buildBatch();
+}
+
+function buildPass() {
+  const b = store.lab.pb || (store.lab.pb = freshPB(1));
+  $("#bm-body").innerHTML = `
+    <div class="card">
+      <div><div class="label">Passage flasks</div><h2>New flask labels</h2></div>
+      <div class="fields">
+        ${fld("pb-proj", "Project code (XX)", b.proj, { num: true, max: 2, ph: "99" })}
+        ${fld("pb-gk", "Cell bank no. (GK)", b.gk, { num: true, max: 3, ph: "78" })}
+        ${fld("pb-vial", "Vial no. (V)", b.vial, { num: true, max: 3, ph: "4" })}
+        ${fld("pb-p", "New passage (P)", b.p, { type: "number", u: "P" })}
+        ${fld("pb-parent", "Parent flask tag", b.parent, { max: 5, ph: +b.p === 0 ? "none at P0" : "ZBT01", disabled: +b.p === 0 })}
+        ${fld("pb-init", "Your initials", b.init, { max: 3, ph: "TLE" })}
+        ${fld("pb-first", "First vessel no.", b.first, { type: "number", min: 1, u: "#" })}
+        ${fld("pb-n", "Flasks to make", b.n, { type: "number", min: 1, u: "flasks" })}
+        ${fld("pb-date", "Inoculation date (day 0)", b.date, { type: "date", full: true })}
+      </div>
+    </div>
+    <div class="card" id="pb-out"></div>`;
+  const map = { proj: "pb-proj", gk: "pb-gk", vial: "pb-vial", p: "pb-p", parent: "pb-parent", init: "pb-init", first: "pb-first", n: "pb-n", date: "pb-date" };
+  Object.entries(map).forEach(([k, id]) => $("#" + id).addEventListener("input", e => {
+    b[k] = e.target.value;
+    if (k === "first") b.firstEdited = true;
+    if (k === "p") { const z = +b.p === 0; const pi = $("#pb-parent"); pi.disabled = z; pi.placeholder = z ? "none at P0" : "ZBT01"; }
+    if (k !== "first" && !b.firstEdited) { b.first = nextChildNo(norm(b.proj), norm(b.gk), norm(b.vial), parseInt(b.p, 10), norm(b.init)); $("#pb-first").value = b.first; }
+    save(); pbCompute();
+  }));
+  pbCompute();
+}
+function pbCompute() {
+  const b = store.lab.pb, out = $("#pb-out"), errs = [];
+  const proj = norm(b.proj), gk = norm(b.gk), vial = norm(b.vial), init = norm(b.init), parent = norm(b.parent);
+  const p = parseInt(b.p, 10), n = Math.max(1, parseInt(b.n, 10) || 1), first = parseInt(b.first, 10);
+  if (!/^\d{2}$/.test(proj)) errs.push("Project code: 2 digits, from the ELN Product list.");
+  if (!/^\d{2,3}$/.test(gk)) errs.push("Cell bank number: 2 or 3 digits.");
+  if (!/^\d{1,3}$/.test(vial)) errs.push("Vial number: 1 to 3 digits.");
+  if (!(p >= 0 && p <= 99)) errs.push("Passage: 0 to 99 (thaw = P0).");
+  if (!/^[A-Z]{3}$/.test(init)) errs.push("Your initials: 3 letters, as in the Initials register.");
+  if (p > 0 && !/^[A-Z]{3}\d{2}$/.test(parent)) errs.push("Parent tag: initials + 2-digit number of the flask you split from (e.g. ZBT01). It's the last part of that flask's ID.");
+  if (!(first >= 1 && first + n - 1 <= 99)) errs.push("Vessel numbers run from 01 to 99.");
+  if (errs.length) { out.innerHTML = `<div class="label">Labels</div>` + errs.map(e => `<div class="msg warn">${esc(e)}</div>`).join(""); return; }
+  const ids = []; for (let i = 0; i < n; i++) ids.push(passageId({ proj, gk, vial, p, parent, child: init + pad2(first + i) }));
+  const existing = ids.filter(id => store.flasks.some(f => f.id === id));
+  const sug = nextChildNo(proj, gk, vial, p, init);
+  const msgs = [];
+  if (existing.length) msgs.push({ c: "bad", t: `Already in My flasks: ${existing.join(", ")}. Each ID must be unique.` });
+  else if (first < sug) msgs.push({ c: "warn", t: `You already saved ${init}${pad2(sug - 1)} at P${p} for this vial. Next free number is ${pad2(sug)}.` });
+  if (p === 0) msgs.push({ c: "info", t: "Thaw is P0: there is no parent, so the parent tag is left out." });
+  else msgs.push({ c: "info", t: `Your vessel numbers count all flasks you inoculate at P${p}, whatever their parent. Check the ELN for ${init} tags already used at P${p}.` });
+  out.innerHTML = `<div class="label">Labels</div>
+    ${passAnatomy({ proj, gk, vial, p, parent, child: init + pad2(first) })}
+    <div class="idlist">${ids.map((id, i) => idRow(id, `Flask ${i + 1} of ${n} · P${p} · day 0 on ${fmtDate(b.date)}`, i === 0)).join("")}</div>
+    ${msgs.map(m => `<div class="msg ${m.c}">${esc(m.t)}</div>`).join("")}
+    <div class="mini">${n > 1 ? `<button data-copy="${escA(ids.join("\n"))}">Copy all</button>` : ""}<button class="primary" id="pb-save" ${existing.length ? "disabled" : ""}>Save ${n > 1 ? n + " flasks" : "flask"} to My flasks</button></div>`;
+  const sv = $("#pb-save");
+  if (sv) sv.onclick = () => {
+    ids.forEach(id => store.flasks.push({ uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), id, date: b.date || todayISO(), samples: {} }));
+    store.lab.pb = freshPB(p); Object.assign(store.lab.pb, { proj, gk, vial, parent: p > 0 ? parent : "" });
+    save(); setLV("flasks");
+  };
+}
+
+function buildSample() {
+  const b = store.lab.sb || (store.lab.sb = { id: "", inoc: todayISO(), on: todayISO(), s: 1 });
+  const opts = [{ v: "", l: "Type or paste an ID below" }].concat(store.flasks.map(f => ({ v: f.uid, l: f.id })));
+  $("#bm-body").innerHTML = `
+    <div class="card">
+      <div><div class="label">Sample</div><h2>Sample and analysis names</h2></div>
+      <div class="fields">
+        ${store.flasks.length ? fld("sb-pick", "From My flasks", "", { type: "select", full: true, options: opts }) : ""}
+        ${fld("sb-id", "Flask or vessel ID", b.id, { full: true, ph: "99-GK78-V4-ZBT01-P3-TLE01" })}
+        ${fld("sb-inoc", "Inoculation date (day 0)", b.inoc, { type: "date" })}
+        ${fld("sb-on", "Sampling date", b.on, { type: "date" })}
+        ${fld("sb-s", "Sample no. that day", b.s, { type: "number", min: 1, u: "#", full: true })}
+      </div>
+    </div>
+    <div class="card" id="sb-out"></div>`;
+  const pick = $("#sb-pick");
+  if (pick) pick.onchange = () => { const f = store.flasks.find(x => x.uid === pick.value); if (f) { b.id = f.id; b.inoc = f.date || b.inoc; $("#sb-id").value = b.id; $("#sb-inoc").value = b.inoc; save(); sbCompute(); } };
+  [["id", "sb-id"], ["inoc", "sb-inoc"], ["on", "sb-on"], ["s", "sb-s"]].forEach(([k, id]) => $("#" + id).addEventListener("input", e => { b[k] = e.target.value; save(); sbCompute(); }));
+  sbCompute();
+}
+function sbCompute() {
+  const b = store.lab.sb, out = $("#sb-out"), id = norm(b.id), s = Math.max(1, parseInt(b.s, 10) || 1);
+  const day = dayOfCulture(b.inoc, b.on);
+  let base = null, anat = "";
+  const o = parsePassage(id);
+  if (o) { base = baseOf(o); anat = passAnatomy({ proj: o.proj, gk: o.gk, vial: o.vial, p: o.p, parent: o.pInit + o.pNo, child: o.cInit + o.cNo }, day, s); }
+  else { const v = id.match(/^(\d{2})-G(\d{2,3})-([A-Z0-9]+)(?:-\d{1,2}(?:-\d{1,2})?)?$/); if (v) base = `${v[1]}-G${v[2]}-${v[3]}`; }
+  if (!id) { out.innerHTML = `<div class="label">Name</div><div class="msg info">Enter a passage flask ID (e.g. 99-GK78-V4-ZBT01-P3-TLE01) or a vessel ID (e.g. 97-G013-SF01).</div>`; return; }
+  if (!base) { out.innerHTML = `<div class="label">Name</div><div class="msg warn">This doesn't match a passage flask or vessel ID. Check it in Decode.</div>`; return; }
+  if (!isFinite(day) || day < 0) { out.innerHTML = `<div class="label">Name</div><div class="msg warn">Sampling date is before the inoculation date.</div>`; return; }
+  const name = sampleName(base, day, s);
+  out.innerHTML = `<div class="label">Name</div>${anat}
+    <div class="idlist">${idRow(name, `Day ${day} of culture · sample ${s} of that day`, true)}${idRow(xt(name), "Osmotech XT format (underscores)")}</div>
+    <div class="msg info">Inoculation day is day 0. The first sample of a day carries no sample number; a second one that day ends in -2.</div>`;
+}
+
+const VTYPES = [{ v: "SF", l: "SF · shake flask (any size)" }, { v: "250mL", l: "250mL · Ambr250" }, { v: "2L", l: "2L bioreactor" }, { v: "50L", l: "50L bioreactor" }, { v: "200L", l: "200L bioreactor" }, { v: "RM50", l: "RM50 · rocker (N-1)" }, { v: "_", l: "Other…" }];
+const ITEMS = [
+  { v: "vessel", l: "Vessel ID" }, { v: "sf00", l: "Parent SF on day 0 (SF00)" }, { v: "ips", l: "In-process sample" },
+  { v: "lysate", l: "Lysate" }, { v: "clar", l: "Clarified harvest sample" }, { v: "usp", l: "USP support sample (back from DSP)" },
+  { v: "perm", l: "Permeate (perfusion)" }, { v: "mprod", l: "Media charge, production bioreactor" }, { v: "mn1", l: "Media charge, N-1" },
+  { v: "n1", l: "N-1 run in production bioreactor" }, { v: "cm", l: "Complexation mix (transfection)" }, { v: "osmo", l: "Osmotech Pro name (on instrument only)" }
+];
+function buildBatch() {
+  const b = store.lab.bb || (store.lab.bb = { proj: store.ident.proj || "", batch: "", type: "SF", other: "", from: 1, count: 1, item: "vessel", day: 0, s: 1, pur: "C", bag: 1, cm: 1 });
+  const it = b.item, needV = !["cm", "sf00"].includes(it), needD = ["ips", "lysate", "clar", "usp", "perm", "osmo"].includes(it);
+  $("#bm-body").innerHTML = `
+    <div class="card">
+      <div><div class="label">Batch experiments</div><h2>Batch, vessel and sample names</h2></div>
+      <div class="fields">
+        ${fld("bb-item", "What to name", it, { type: "select", full: true, options: ITEMS })}
+        ${fld("bb-proj", "Project code (XX)", b.proj, { num: true, max: 2, ph: "97" })}
+        ${fld("bb-batch", "Batch no. (G)", b.batch, { num: true, max: 3, ph: "013" })}
+        ${needV ? fld("bb-type", "Vessel type", b.type, { type: "select", options: VTYPES }) : ""}
+        ${needV && b.type === "_" ? fld("bb-other", "Vessel code", b.other, { max: 8, ph: "e.g. 10L" }) : ""}
+        ${needV && b.type !== "RM50" ? fld("bb-from", "First vessel no.", b.from, { type: "number", min: 1, u: "#" }) + fld("bb-count", "How many vessels", b.count, { type: "number", min: 1, u: "n" }) : ""}
+        ${needD ? fld("bb-day", "Day of culture", b.day, { type: "number", u: "day" }) : ""}
+        ${["ips", "osmo"].includes(it) ? fld("bb-s", "Sample no. that day", b.s, { type: "number", min: 1, u: "#" }) : ""}
+        ${["clar", "usp"].includes(it) ? fld("bb-pur", "Purification type", b.pur, { type: "select", options: [{ v: "C", l: "C · clarified" }, { v: "L", l: "L · post-lysis centrifuged" }, { v: "F", l: "F · post-lysis filtered" }] }) + fld("bb-bag", "Bag no.", b.bag, { type: "number", min: 1, u: "#" }) : ""}
+        ${it === "cm" ? fld("bb-cm", "Complexation mix no.", b.cm, { type: "number", min: 1, u: "#" }) : ""}
+      </div>
+    </div>
+    <div class="card" id="bb-out"></div>`;
+  [["item", "bb-item", 1], ["proj", "bb-proj"], ["batch", "bb-batch"], ["type", "bb-type", 1], ["other", "bb-other"], ["from", "bb-from"], ["count", "bb-count"], ["day", "bb-day"], ["s", "bb-s"], ["pur", "bb-pur"], ["bag", "bb-bag"], ["cm", "bb-cm"]].forEach(([k, id, rerender]) => {
+    const el = $("#" + id); if (!el) return;
+    el.addEventListener(rerender ? "change" : "input", e => { b[k] = e.target.value; save(); if (rerender) buildBatch(); else bbCompute(); });
+  });
+  bbCompute();
+}
+function bbCompute() {
+  const b = store.lab.bb, out = $("#bb-out"), errs = [];
+  const proj = norm(b.proj), batch = norm(b.batch), it = b.item;
+  if (!/^\d{2}$/.test(proj)) errs.push("Project code: 2 digits.");
+  if (!/^\d{2,3}$/.test(batch)) errs.push("Batch number: 2 or 3 digits, as on the batch record (e.g. 013).");
+  const type = b.type === "_" ? norm(b.other) : b.type;
+  const needV = !["cm", "sf00"].includes(it);
+  if (needV && !type) errs.push("Enter the vessel code.");
+  const from = parseInt(b.from, 10) || 1, count = b.type === "RM50" ? 1 : Math.max(1, parseInt(b.count, 10) || 1);
+  if (needV && b.type !== "RM50" && from + count - 1 > 99) errs.push("Vessel numbers are 2 digits (01–99).");
+  const day = parseInt(b.day, 10), s = Math.max(1, parseInt(b.s, 10) || 1);
+  if (["ips", "lysate", "clar", "usp", "perm", "osmo"].includes(it) && !(day >= 0)) errs.push("Day of culture: 0 or more (inoculation day = 0).");
+  if (errs.length) { out.innerHTML = `<div class="label">Names</div>` + errs.map(e => `<div class="msg warn">${esc(e)}</div>`).join(""); return; }
+  const br = `${proj}-G${batch}`, ids = [];
+  const vtok = rr => b.type === "RM50" ? "RM50" : type + pad2(rr);
+  const sfx = { vessel: "", ips: `-${day}${s > 1 ? "-" + s : ""}`, lysate: `-${day}-L`, clar: `-${day}-${b.pur}${parseInt(b.bag, 10) || 1}`, usp: `-${day}-${b.pur}${parseInt(b.bag, 10) || 1}-EN`, perm: `-${day}-P`, mprod: "-M", mn1: "-N-1-M", n1: "-N-1" };
+  let note = "";
+  if (it === "cm") { ids.push(`GT${proj}-G${batch}-CM${parseInt(b.cm, 10) || 1}`); note = "One number per mix for the same batch: CM1, CM2…"; }
+  else if (it === "sf00") { ids.push(`${br}-SF00`); note = "When SF00 is split, the new flasks are SF01, SF02… (switch to Vessel ID)."; }
+  else if (it === "osmo") { for (let i = 0; i < count; i++) ids.push(`${br}-${day}${s > 1 ? "-" + s : ""}-${vtok(from + i)}`); note = "Equipment only. The ELN keeps the standard name. With autoindexing you enter " + `${br}-${day}${s > 1 ? "-" + s : ""}-${type}` + " and the instrument appends _1, _2…; for non-consecutive vessels type each name."; }
+  else { for (let i = 0; i < count; i++) ids.push(br + "-" + vtok(from + i) + sfx[it]); }
+  if (it === "ips") note = "First sample of the day carries no sample number.";
+  if (it === "vessel" && type === "SF") note = "Shake flasks are always SF, whatever their size.";
+  const showXT = ["ips", "lysate", "clar", "usp", "perm"].includes(it);
+  out.innerHTML = `<div class="label">Names</div>
+    <div class="idlist">${ids.map((id, i) => idRow(id, "", i === 0)).join("")}${showXT ? idRow(xt(ids[0]), "Osmotech XT format (underscores)") : ""}</div>
+    ${note ? `<div class="msg info">${esc(note)}</div>` : ""}
+    ${ids.length > 1 ? `<div class="mini"><button data-copy="${escA(ids.join("\n"))}">Copy all</button></div>` : ""}`;
+}
+
+/* ---- Decode ---- */
+function decode(raw) {
+  const id = norm(raw); const rows = []; let sum = "", warn = [];
+  if (!id) return null;
+  if (/[a-z]/.test(String(raw))) warn.push("IDs are written in capitals.");
+  if (/\s/.test(String(raw).trim())) warn.push("No spaces in IDs.");
+  let m;
+  if ((m = id.match(RE_PASS))) {
+    const o = parsePassage(id), parent = o.pInit + o.pNo, child = o.cInit + o.cNo;
+    rows.push([o.proj, "Project code"], ["GK" + o.gk, "Cell bank " + o.gk], ["V" + o.vial, "Vial " + o.vial]);
+    if (parent) rows.push([parent, `Parent flask: n°${+o.pNo} inoculated by ${o.pInit} at P${o.p - 1}`]);
+    rows.push(["P" + o.p, o.p === 0 ? "Passage 0 = thaw" : "Passage " + o.p], [child, `This flask: n°${+o.cNo} inoculated by ${o.cInit} at P${o.p}`]);
+    if (o.day !== undefined) rows.push([o.day, `Day ${o.day} of culture (inoculation = day 0)`]);
+    if (o.s !== undefined) rows.push([o.s, `Sample ${o.s} taken that day`]);
+    sum = `${o.day !== undefined ? (o.s ? `Sample ${o.s}` : "First sample") + ` on day ${o.day} of ` : ""}shake flask n°${+o.cNo} of passage ${o.p}, cell bank ${o.gk}, vial ${o.vial}, project ${o.proj}, inoculated by ${o.cInit}${parent ? ` from flask n°${+o.pNo} of the previous passage inoculated by ${o.pInit}` : " (thaw)"}.`;
+    if (o.p === 0 && parent) warn.push("P0 (thaw) has no parent: the parent tag should be left out.");
+    if (o.p > 0 && !parent) warn.push(`Missing parent tag: P${o.p} needs the tag of the flask it came from.`);
+    if (o.cInit.length !== 3 || (o.pInit && o.pInit.length !== 3)) warn.push("Operator initials are 3 letters.");
+    if (o.s === "1") warn.push("The first sample of a day is not numbered; drop the -1.");
+    return { type: o.day !== undefined ? "Passage sample / analysis" : "Passage flask", rows, sum, warn };
+  }
+  if (/^\d{2}-GK\d{2,3}-V\d{1,3}-.*P\d/.test(id) && /[A-Z]{3}\d(?!\d)/.test(id)) warn.push("Vessel numbers in tags are 2 digits (TLE01, not TLE1).");
+  if ((m = id.match(/^(\d{2})-GK(\d{2,3})-V(\d{1,3})$/))) return { type: "Inoculum (vial)", rows: [[m[1], "Project code"], ["GK" + m[2], "Cell bank " + m[2]], ["V" + m[3], "Vial " + m[3]]], sum: `Vial ${m[3]} of cell bank ${m[2]}, project ${m[1]}.`, warn };
+  if ((m = id.match(/^(\d{2})-GK(\d{2,3})$/))) return { type: "Cell bank", rows: [[m[1], "Project code (generic GTDSPS code if not project-specific)"], ["GK" + m[2], "Cell bank " + m[2]]], sum: `Cell bank ${m[2]} of project ${m[1]}.`, warn };
+  if ((m = id.match(/^GT(\d{2})-G(\d{2,3})-CM(\d+)$/))) return { type: "Complexation mix", rows: [["GT", "Gene therapy"], [m[1], "Project code"], ["G" + m[2], "Batch " + m[2]], ["CM" + m[3], "Mix n°" + m[3] + " for this batch"]], sum: `Complexation mix ${m[3]} for batch ${m[2]} of project ${m[1]}.`, warn };
+  if ((m = id.match(/^GBU-(\d{6})$/))) return { type: "USP buffer / solution (no ELN template)", rows: [["GBU", "Buffer or solution, upstream"], [m[1], "Global 6-digit increment"]], sum: "Recorded in the designated Excel file on SharePoint.", warn };
+  if ((m = id.match(/^(\d{2})(\d{2})(\d{4})-GBD-([A-Z]{3})-(\d+)$/))) return { type: "DSP solution (no ELN template)", rows: [[m[1] + m[2] + m[3], `Date ${m[1]}/${m[2]}/${m[3]}`], ["GBD", "Buffer or solution, downstream"], [m[4], "Preparer"], [m[5], "Solution n° of that preparer that day"]], sum: `Solution ${+m[5]} prepared by ${m[4]} on ${m[1]}/${m[2]}/${m[3]}.`, warn };
+  if ((m = id.match(/^(\d{2})-G(\d{2,3})-(\d{3})L-([A-Z]{3})R(\d+)-([A-Z]{2})(\d*)$/))) return { type: "DSP sample, end-to-end 50L/200L", rows: [[m[1], "Project code"], ["G" + m[2], "Batch"], [m[3] + "L", "Scale"], [m[4] + "R" + m[5], `${DSPOP[m[4]] || m[4]}, run ${m[5]}`], [m[6] + m[7], (DSPPH[m[6]] || m[6]) + (m[7] ? " " + m[7] : "")]], sum: "", warn };
+  if ((m = id.match(/^(\d{2})-(\d{2})(\d{2})(\d{2})-([A-Z]{3})R(\d+)-([A-Z]{2})(\d*)$/))) return { type: "DSP sample", rows: [[m[1], "Project code"], [m[2] + m[3] + m[4], `Date 20${m[2]}-${m[3]}-${m[4]}`], [m[5] + "R" + m[6], `${DSPOP[m[5]] || m[5]}, run ${m[6]}`], [m[7] + m[8], (DSPPH[m[7]] || m[7]) + (m[8] ? " " + m[8] : "")]], sum: "", warn };
+  if ((m = id.match(/^(\d{2})-G(\d{2,3})$/))) return { type: "Batch record", rows: [[m[1], "Project code"], ["G" + m[2], "Batch " + m[2]]], sum: `Batch ${m[2]} of project ${m[1]}.`, warn };
+  if ((m = id.match(/^(\d{2})-G(\d{2,3})-(.+)$/))) {
+    const t = m[3].split("-"); rows.push([m[1], "Project code"], ["G" + m[2], "Batch " + m[2]]);
+    let osmo = false;
+    if (/^\d{1,2}$/.test(t[0])) { osmo = true; const vt = t[t.length - 1]; const d = t[0], s = t.length === 3 ? t[1] : null; rows.push([d, `Day ${d}`]); if (s) rows.push([s, "Sample " + s]); rows.push([vt, vesselDesc(vt)]); return { type: "Osmotech Pro name (instrument only)", rows, sum: "Equipment-side name; the ELN uses the standard order.", warn }; }
+    const v = t.shift(); rows.push([v, vesselDesc(v)]);
+    const rest = t.join("-");
+    let type = "Vessel in a batch experiment";
+    if (v === "SF00" && !rest) type = "Parent shake flask, day 0 (to be split)";
+    if (rest === "M") { rows.push(["M", "Media charge (no cells)"]); type = "Media charge, production bioreactor"; }
+    else if (rest === "N-1-M") { rows.push(["N-1-M", "Media charge for the N-1"]); type = "Media charge, N-1"; }
+    else if (rest === "N-1") { rows.push(["N-1", "N-1 run inside the production bioreactor"]); type = "N-1 in production bioreactor"; }
+    else if (rest) {
+      const d = t[0]; rows.push([d, `Day ${d} (inoculation = day 0)`]);
+      const x = t.slice(1);
+      if (!x.length) type = "In-process sample (first of the day)";
+      else if (x.length === 1 && /^\d{1,2}$/.test(x[0])) { rows.push([x[0], "Sample " + x[0] + " that day"]); type = "In-process sample"; if (x[0] === "1") warn.push("The first sample of a day is not numbered; drop the -1."); }
+      else if (x[0] === "L") { rows.push(["L", "Lysate"]); type = "Lysate"; }
+      else if (x[0] === "P") { rows.push(["P", "Permeate"]); type = "Permeate (perfusion)"; }
+      else if (/^[CLF]\d+$/.test(x[0])) { rows.push([x[0], `${{ C: "Clarified", L: "Post-lysis centrifuged", F: "Post-lysis filtered" }[x[0][0]]}, bag ${x[0].slice(1)}`]); type = "Clarified harvest sample"; if (x[1] === "EN") { rows.push(["EN", "Purified DSP material"]); type = "USP support sample"; } }
+      else warn.push("Couldn't read the part after the day: " + x.join("-"));
+    }
+    return { type, rows, sum: "", warn };
+  }
+  return { type: null, rows: [], sum: "", warn };
+}
+const DSPOP = { AFF: "Affinity chromatography", AEX: "Anion exchange chromatography", CEX: "Cation exchange chromatography", HIC: "Hydrophobic interaction chromatography", MMC: "Mixed-mode chromatography", TFF: "Tangential flow filtration", VRF: "Viral filtration", DVI: "Detergent viral inactivation", DFL: "Depth filtration", ERE: "Enzymatic reaction experiment" };
+const DSPPH = { TH: "Thawed harvest", FH: "Filtered harvest", LD: "Load", FT: "Flowthrough", RE: "Re-equilibration", WA: "Wash", EN: "Elution", ST: "Strip", FL: "Filtrate", UL: "UF/DF load", RT: "UF/DF retentate", CH: "Chase (flush)", PO: "Pool (retentate + chase), non-filtered", RC: "Retentate during concentration", RD: "Retentate during diafiltration", PC: "Permeate during concentration", PD: "Permeate during diafiltration", DS: "DS bulk / DS sample", CF: "Post-chase 0.2 µm filtrate", RI: "Reaction input", RO: "Reaction output" };
+function vesselDesc(v) {
+  if (v === "RM50") return "RM50 rocker";
+  const m = v.match(/^(.*?)(\d{2})$/);
+  if (!m || !m[1]) return /^\d+L$/.test(v) ? v + " bioreactor" : "Vessel " + v;
+  const t = m[1], n = m[2];
+  const name = t === "SF" ? "Shake flask" : t === "250ML" ? "Ambr250 vessel" : /^\d+L$/.test(t) ? t + " bioreactor" : t;
+  return `${name} n°${n}${t === "SF" && n === "00" ? " (parent, day 0)" : ""}`;
+}
+function renderDecode() {
+  const el = $("#lv-decode"); const v = store.lab.dec || "";
+  el.innerHTML = `<div class="card">
+      <div><div class="label">Decode</div><h2>What does this ID mean?</h2></div>
+      <div class="field"><label for="dec-in">Paste or type any lab ID</label><input id="dec-in" type="text" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="99-GK78-V20-GGA01-P2-PSE01-3-2" value="${escA(v)}"></div>
+      <div class="mini">${["99-GK78-V4-SSH01-P3-ZBT01", "99-GK78-V20-GGA01-P2-PSE01-3-2", "95-G07-2L02-05-C2", "GT98-G01-CM1"].map(x => `<button data-ex="${x}">${x}</button>`).join("")}</div>
+    </div><div class="card" id="dec-out"></div>`;
+  const inp = $("#dec-in");
+  inp.addEventListener("input", () => { store.lab.dec = inp.value; save(); decOut(); });
+  el.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { inp.value = b.dataset.ex; store.lab.dec = inp.value; save(); decOut(); });
+  decOut();
+}
+function decOut() {
+  const r = decode(store.lab.dec || ""), out = $("#dec-out");
+  if (!r) { out.innerHTML = `<div class="label">Result</div><p class="small muted">Works for passage flasks and samples, vials, cell banks, batch records, vessels, in-process samples, lysates, harvests, media charges, complexation mixes, buffers and DSP samples. Underscores (Osmotech XT) are read as dashes.</p>`; return; }
+  if (!r.type) { out.innerHTML = `<div class="label">Result</div><div class="msg bad">Not a recognised format. Compare it with the Rules tab.</div>${r.warn.map(w => `<div class="msg warn">${esc(w)}</div>`).join("")}`; return; }
+  out.innerHTML = `<div class="label">Result</div><h3>${esc(r.type)}</h3>
+    <table class="dec"><tbody>${r.rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</tbody></table>
+    ${r.sum ? `<p>${esc(r.sum)}</p>` : ""}${r.warn.map(w => `<div class="msg warn">${esc(w)}</div>`).join("")}`;
+}
+
+/* ---- Rules ---- */
+function renderRules() {
+  const R = (t, f, ex, d) => `<div class="rule-item"><b>${esc(t)}</b><div class="fmt">${esc(f)}</div>${ex ? `<div class="fmt-ex">e.g. ${esc(ex)}</div>` : ""}${d ? `<div class="small muted">${esc(d)}</div>` : ""}</div>`;
+  $("#lv-rules").innerHTML = `
+    <div class="card">
+      <div><div class="label">Naming conventions</div><h2>Passage flasks</h2></div>
+      <div class="fmt">XX-GKbb-Vv-[parent tag]-Pp-[child tag]</div>
+      ${passAnatomy({ proj: "99", gk: "78", vial: "4", p: 3, parent: "ZBT01", child: "TLE01" })}
+      <ul class="list small">
+        <li>Tags = 3-letter initials (Initials register) + 2-digit vessel number.</li>
+        <li>Child number counts the vessels <i>you</i> inoculate at this passage, independent of the parent.</li>
+        <li>Thaw = P0, no parent tag: 99-GK78-V4-P0-ZBT01.</li>
+        <li>Analyses add the day of culture and, from the 2nd sample that day, the sample number.</li>
+      </ul>
+      <div class="label" style="margin-top:6px">Example lineage</div>
+      <div class="idlist small">
+        ${[["P0", "99-GK78-V4-P0-ZBT01", "thaw by ZBT"], ["P1", "99-GK78-V4-ZBT01-P1-ZBT01", "by ZBT"], ["P2", "99-GK78-V4-ZBT01-P2-GGA01", "by GGA"], ["P2", "99-GK78-V4-ZBT01-P2-GGA02", "by GGA"], ["P3", "99-GK78-V4-GGA01-P3-SSH01", "by SSH"], ["P3", "99-GK78-V4-GGA01-P3-SSH02", "by SSH"], ["P3", "99-GK78-V4-GGA02-P3-SSH03", "different parent, numbering continues"]].map(([p, id, d]) => `<div class="idrow"><div style="min-width:0"><code style="font-size:13px">${id}</code><small>${p} · ${d}</small></div><span class="pill">${p}</span></div>`).join("")}
+      </div>
+      ${R("Passage analysis (e.g. Vi-CELL count)", "XX-GKbb-Vv-[parent]-Pp-[child]-d(-s)", "99-GK78-V20-GGA01-P2-PSE01-3-2", "2nd measurement on day 3. Inoculation day = day 0.")}
+    </div>
+    <div class="card">
+      <div class="label">General rules</div>
+      <ul class="list small">
+        <li>Parts in brackets are used only when they apply; brackets and spaces never appear in the real ID.</li>
+        <li>Check existing codes before giving a unique number, to avoid duplicates.</li>
+        <li>If no convention fits, use an ad hoc number that is unique and explicit (at least project code and batch), and document it in the ELN experiment.</li>
+        <li>The first sample of the day from a vessel is not numbered; numbers start at the 2nd sample that day.</li>
+        <li>Osmotech XT: same names with underscores instead of dashes.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="label">Cells and materials</div>
+      ${R("Project", "XX", "99", "2 digits, from the ELN Product list (ask ELN key users for new ones).")}
+      ${R("Cell bank", "XX-GKbb", "99-GK78", "Generic GTDSPS project code if not project-specific.")}
+      ${R("Inoculum (vial)", "XX-GKbb-Vv", "99-GK78-V4")}
+      ${R("Complexation mix", "GTXX-Gbb-CMy", "GT98-G01-CM1")}
+      ${R("USP buffer without ELN template", "GBU-yyyyyy", "GBU-000001", "6-digit global increment, logged in the SharePoint Excel file. With the ELN template, the number is assigned automatically.")}
+      ${R("DSP solution without ELN template", "DDMMYYYY-GBD-XXX-yy", "20112024-GBD-MJA-01")}
+    </div>
+    <div class="card">
+      <div class="label">Batch experiments</div>
+      ${R("Batch record", "XX-Gzz", "97-G013")}
+      ${R("Bioreactor or shake flask", "XX-Gzz-TTrr", "98-G106-250mL01", "SF for any shake flask size; vessel number 2 digits. RM50 rocker: 97-G010-RM50.")}
+      ${R("Parent SF on day 0, then split", "XX-Gzz-SF00 → SF01, SF02…", "97-G013-SF00")}
+      ${R("In-process sample", "XX-Gzz-TTrr-d(-s)", "95-G22-2L03-3-2")}
+      ${R("Lysate", "XX-Gzz-TTrr-d-L", "98-G012-2L01-5-L")}
+      ${R("Clarified harvest", "XX-Gzz-TTrr-d-Nn", "95-G07-2L02-05-C2", "N: C clarified, L post-lysis centrifuged, F post-lysis filtered; n = bag.")}
+      ${R("USP support sample", "XX-Gzz-TTrr-d-Nn-EN", "95-G07-2L02-05-C2-EN")}
+      ${R("Permeate", "XX-Gzz-TTrr-d-P")}
+      ${R("Media charge", "XX-Gzz-TTrr-M · N-1: …-N-1-M", "97-G006-50L-N-1-M")}
+      ${R("N-1 in production bioreactor", "XX-Gzz-TTrr-N-1", "97-G006-50L-N-1")}
+      ${R("Osmotech Pro (instrument only)", "XX-Gzz-d(-s)-TTrr", "97-G010-1-2-SF03")}
+    </div>
+    <div class="card">
+      <div class="label">Downstream</div>
+      ${R("DSP sample after clarification", "XX-YYMMDD-AAARn-Phn", "98-231005-AEXR1-EN1")}
+      ${R("DSP end-to-end 50L / 200L", "XX-Gnn-YYYL-AAARn-Phn", "97-G01-050L-AEXR1-EN1")}
+      ${R("DS filter binding", "XX-YYMMDD-TFFRn-DSn", "97-250107-TFFR5-DS1")}
+      <p class="small muted">Unit operations: ${Object.entries(DSPOP).map(([k, v]) => k + " " + v.toLowerCase()).join(" · ")}.</p>
+    </div>
+    <p class="small muted">From the GTDSPS naming conventions SOP, v2.0 (effective 11 Jun 2025). Check the current version in the document system if in doubt.</p>`;
 }
 
 /* ---------- nav ---------- */
@@ -762,6 +1301,7 @@ function tab(name) {
   document.querySelectorAll("[data-screen]").forEach(s => s.hidden = s.dataset.screen !== name);
   document.querySelectorAll("[data-tab]").forEach(b => b.dataset.tab === name ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   if (name === "learn") renderLearn();
+  if (name === "labels") renderLabels();
   if (name === "settings") renderSettings();
   if (name === "tools" && openTool) showTool(openTool.id);
   try { sessionStorage.setItem("hekbench.tab", name); } catch (e) {}
@@ -774,7 +1314,7 @@ renderProtocol();
 updateTop();
 let startTab = "tools";
 try { startTab = sessionStorage.getItem("hekbench.tab") || "tools"; } catch (e) {}
-tab(["tools", "protocol", "learn", "settings"].includes(startTab) ? startTab : "tools");
+tab(["tools", "labels", "protocol", "learn", "settings"].includes(startTab) ? startTab : "tools");
 </script>
 
 <script>
