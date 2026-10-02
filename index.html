@@ -133,6 +133,14 @@ ul.list li::marker { color: var(--teal) }
 .confirm { background: var(--warn-soft); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px }
 .confirm .label { color: var(--warn) }
 .confirm ul.list li::marker { color: var(--warn) }
+.timer { font: 600 13px/1 var(--body); color: var(--teal); background: var(--teal-soft); border: 1px solid var(--teal); border-radius: 8px; padding: 7px 10px; cursor: pointer; margin-top: 6px; font-variant-numeric: tabular-nums }
+.timer.run { background: var(--accent-soft); color: var(--accent); border-color: var(--accent) }
+.timer.end { background: var(--good-soft); color: var(--good); border-color: var(--good) }
+.check label .tw { display: flex; flex-direction: column; align-items: flex-start }
+.setpoints { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px }
+.sp { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.4 }
+.sp b { display: block; font-size: 14px }
+.sp span { font-family: var(--mono); font-size: 12px; color: var(--muted) }
 .loopnote { font: 500 12px/1.3 var(--mono); color: var(--teal); text-align: center; padding: 2px 0 }
 
 /* checklist */
@@ -273,6 +281,10 @@ body { margin: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)) }
 
   <!-- PROTOCOL -->
   <section id="s-protocol" data-screen="protocol" class="stack" hidden>
+    <div class="seg" role="group" aria-label="Protocol">
+      <button data-proto="pass" aria-pressed="true">Passaging</button>
+      <button data-proto="thaw" aria-pressed="false">Thawing</button>
+    </div>
     <div class="seg" role="group" aria-label="Protocol view">
       <button id="pv-steps" aria-pressed="true">Steps</button>
       <button id="pv-check" aria-pressed="false">Bench checklist</button>
@@ -314,7 +326,9 @@ store.lab = store.lab || {};
 
 /* ---------- lab values (defaults = placeholders until confirmed) ---------- */
 const SETTINGS = [
-  { id: "seed", t: "Target seeding density", h: "VCD right after the split", u: "e6/mL", def: 0.3, conf: false },
+  { id: "seed", t: "Seeding density, next passage in 4 days", h: "Preferred interval. Lower density because the cells grow one day longer", u: "e6/mL", def: 0.3, conf: false },
+  { id: "seed3", t: "Seeding density, next passage in 3 days", h: "Higher density because the cells have one day less to grow", u: "e6/mL", def: 0.55, conf: false },
+  { id: "p1vol", t: "First passage after thaw: volume", h: "500 mL flask", u: "mL", def: 200, conf: true },
   { id: "passMin", t: "Passage window, lower VCD", h: "Below this, the flask is usually not split yet", u: "e6/mL", def: 2.0, conf: false },
   { id: "passMax", t: "Passage window, upper VCD", h: "Above this, cells risk leaving exponential growth", u: "e6/mL", def: 4.0, conf: false },
   { id: "vol", t: "Working volume", h: "Culture volume per flask", u: "mL", def: 800, conf: true },
@@ -322,6 +336,9 @@ const SETTINGS = [
   { id: "viab", t: "Minimum viability", h: "Below this, flag the flask", u: "%", def: 95, conf: false },
   { id: "td", t: "Doubling time estimate", h: "Measure yours with the growth tool", u: "h", def: 24, conf: false },
   { id: "days", t: "Days between passages", h: "Usual interval", u: "days", def: 3.5, conf: true },
+  { id: "thawVol", t: "Thaw: final volume", h: "Vial + medium in the thaw flask", u: "mL", def: 50, conf: true },
+  { id: "thawVcd", t: "Thaw: expected VCD", h: "First count right after seeding", u: "e6/mL", def: 0.3, conf: true },
+  { id: "thawViab", t: "Thaw: minimum viability", h: "First count right after seeding", u: "%", def: 90, conf: true },
   { id: "maxP", t: "Maximum passage number", h: "Cell age limit after thaw", u: "P", def: 20, conf: false }
 ];
 function S(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
@@ -334,6 +351,7 @@ function f(x, d = 1) { if (!isFinite(x)) return "–"; return x.toLocaleString("
 function sig(x) { if (!isFinite(x)) return "–"; const a = Math.abs(x); return f(x, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3); }
 function cells(x) { if (!isFinite(x)) return "–"; if (x >= 1e9) return f(x / 1e9, 2) + " × 10⁹"; return f(x / 1e6, 1) + " × 10⁶"; }
 const PIPS = [5, 10, 25, 50, 100];
+const FLASKS = [{ n: "250 mL", v: 50 }, { n: "500 mL", v: 200 }, { n: "2 L", v: 800 }];
 function pipetting(v) {
   if (!(v > 0)) return "";
   if (v < 1) return "Use a micropipette (" + f(v * 1000, 0) + " µL)";
@@ -348,19 +366,22 @@ function pipetting(v) {
 const TOOLS = [
   {
     id: "split", group: "main", ic: "÷", title: "Routine split", d: "From your count to culture and medium volumes",
+    modes: [{ id: "d4", l: "Next passage in 4 days" }, { id: "d3", l: "In 3 days" }], modeResets: ["t"],
     fields: [
       { id: "m", label: "Measured VCD", u: "e6/mL", def: () => 3.0 },
       { id: "via", label: "Viability", u: "%", def: () => 97 },
-      { id: "t", label: "Target seeding VCD", u: "e6/mL", def: () => S("seed"), set: "seed" },
-      { id: "v", label: "Final volume", u: "mL", def: () => S("vol"), set: "vol" },
+      { id: "t", label: "Target seeding VCD", u: "e6/mL", def: m => m === "d3" ? S("seed3") : S("seed"), set: m => m === "d3" ? "seed3" : "seed" },
+      { id: "v", label: "Working volume of new flask", u: "mL", def: () => "" },
       { id: "n", label: "New flasks from this one", u: "flasks", def: () => 1 },
-      { id: "src", label: "Culture in source flask", u: "mL", def: () => S("vol") }
+      { id: "src", label: "Culture in source flask", u: "mL", def: () => "" }
     ],
+    presets: { field: "v", label: "New flask", options: FLASKS.map(x => ({ l: x.n + " · " + x.v + " mL", v: x.v })) },
     formula: "V_culture = target VCD × final volume / measured VCD\nV_medium  = final volume − V_culture",
-    how: ["Measured and target VCD must be in the same unit (here ×10⁶ cells/mL).", "Add the fresh medium to the new flask first, then the culture volume.", "Each replicate flask is calculated from its own count."],
+    how: ["Measured and target VCD must be in the same unit (here ×10⁶ cells/mL).", "Add the fresh medium to the new flask first, then the culture volume.", "Each replicate flask is calculated from its own count.", "Working volume is always the flask's maximum: 250 mL flask → 50 mL, 500 mL → 200 mL, 2 L → 800 mL.", "The flask is scaled up at each passage when the cell count allows, so the working volume is entered every time."],
     calc(v) {
       const out = { res: [], msgs: [] };
-      if (!(v.m > 0 && v.t > 0 && v.v > 0)) return { err: "Enter measured VCD, target VCD and final volume." };
+      if (!(v.v > 0)) return { err: "Enter the working volume of the new flask (or tap a flask size). It's entered at every passage because the flask is scaled up whenever possible." };
+      if (!(v.m > 0 && v.t > 0)) return { err: "Enter the measured VCD and the target VCD." };
       if (v.t >= v.m) return { err: "Target VCD is at or above the measured VCD, so there is nothing to split. Use the top-up tool if you need more cells." };
       const vc = v.t * v.v / v.m, vm = v.v - vc, n = v.n > 0 ? Math.round(v.n) : 1;
       out.res.push({ big: true, l: "Culture to transfer, per flask", v: f(vc, 1) + " mL", i: pipetting(vc) });
@@ -375,7 +396,10 @@ const TOOLS = [
         const maxN = Math.floor(v.src / vc);
         if (vc * n > v.src) out.msgs.push({ c: "bad", t: "Not enough culture: " + n + " flasks need " + f(vc * n, 1) + " mL but the source holds " + f(v.src, 0) + " mL. Maximum is " + maxN + " flask" + (maxN === 1 ? "" : "s") + "." });
         else out.res.push({ l: "Max flasks from source", v: String(maxN), i: "left in source: " + f(v.src - vc * n, 1) + " mL" });
-      }
+        const ok = FLASKS.filter(x => v.t * x.v / v.m <= v.src), big = ok[ok.length - 1];
+        out.res.push({ l: "Largest flask this source can seed", v: big ? big.n + " (" + big.v + " mL)" : "none", i: FLASKS.map(x => x.n + ": " + f(v.t * x.v / v.m, 1) + " mL").join(" · ") });
+        if (big && big.v > v.v) out.msgs.push({ c: "info", t: "Enough cells to scale up to a " + big.n + " flask (" + big.v + " mL). Flasks are scaled up at each passage when possible." });
+      } else out.msgs.push({ c: "info", t: "Add the culture volume in the source flask to see whether you can scale up." });
       if (v.via > 0 && v.via < S("viab")) out.msgs.push({ c: "warn", t: "Viability " + f(v.via, 1) + "% is below your threshold (" + S("viab") + "%). Flag it before passaging." });
       else if (v.via >= S("viab")) out.msgs.push({ c: "good", t: "Viability OK (≥ " + S("viab") + "%)." });
       if (v.m < S("passMin")) out.msgs.push({ c: "warn", t: "Measured VCD is below the passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL). Consider waiting." });
@@ -451,6 +475,42 @@ const TOOLS = [
         if (v.v0 + x > S("vol") * 1.1) out.msgs.push({ c: "warn", t: "Final volume is more than 10% above the usual " + S("vol") + " mL. Consider \"Keep volume\", or split the excess into a second flask." });
         if (v.v0 + x > S("flask") * 0.5) out.msgs.push({ c: "bad", t: "Over half the flask's nominal volume (" + S("flask") + " mL). Oxygen transfer will suffer." });
       }
+      return out;
+    }
+  },
+  {
+    id: "thaw", group: "main", ic: "❄", title: "Thaw check", d: "Post-thaw count: recovery, vial density, days to first passage",
+    fields: [
+      { id: "vcd", label: "Measured VCD after thaw", u: "e6/mL", def: () => 0.3 },
+      { id: "via", label: "Viability", u: "%", def: () => 92 },
+      { id: "vv", label: "Vial volume added", u: "mL", def: () => 1 },
+      { id: "vt", label: "Final volume in flask", u: "mL", def: () => S("thawVol"), set: "thawVol" },
+      { id: "exp", label: "Expected VCD", u: "e6/mL", def: () => S("thawVcd"), set: "thawVcd" },
+      { id: "dmso", label: "DMSO in vial (assumed)", u: "%", def: () => 10 }
+    ],
+    formula: "medium         = final volume − vial volume\nviable cells   = VCD × final volume\nvial density   = VCD × final volume / vial volume\nVCD on day d   = VCD × 2^(24 × d / Td)",
+    how: ["Recovery compares your count with the expected post-thaw VCD.", "Day 3 / day 4 predictions assume steady growth with no lag; cells usually lag after a thaw, so expect lower.", "DMSO % in the vial is an assumption (10% is typical); check the cell bank record."],
+    calc(v) {
+      const out = { res: [], msgs: [] };
+      if (!(v.vcd > 0 && v.vv > 0 && v.vt > 0)) return { err: "Enter the measured VCD, vial volume and final volume." };
+      if (v.vv >= v.vt) return { err: "Final volume must be larger than the vial volume." };
+      const tot = v.vcd * 1e6 * v.vt;
+      out.res.push({ big: true, l: "Viable cells recovered", v: cells(tot), i: "medium to prepare: " + f(v.vt - v.vv, 0) + " mL · dilution 1:" + f(v.vt / v.vv, 0) });
+      if (v.exp > 0) out.res.push({ l: "vs expected VCD", v: f(v.vcd / v.exp * 100, 0) + "%", i: "expected " + sig(v.exp) + " e6/mL" });
+      out.res.push({ l: "Implied viable density in vial", v: sig(v.vcd * v.vt / v.vv) + " e6/mL" });
+      if (v.dmso >= 0) out.res.push({ l: "DMSO after dilution", v: f(v.dmso * v.vv / v.vt, 2) + "%" });
+      const lo = S("passMin"), td = S("td");
+      const d3 = v.vcd * Math.pow(2, 72 / td), d4 = v.vcd * Math.pow(2, 96 / td);
+      out.res.push({ l: "Predicted VCD, day 3 / day 4", v: sig(d3) + " / " + sig(d4), i: "e6/mL · Td " + f(td, 0) + " h, no lag" });
+      const need = S("seed") * 1e6 * S("p1vol");
+      out.res.push({ l: "First passage needs", v: cells(need), i: f(S("p1vol"), 0) + " mL at " + sig(S("seed")) + " e6/mL (500 mL flask)" });
+      if (v.via > 0 && v.via < S("thawViab")) out.msgs.push({ c: "bad", t: "Viability " + f(v.via, 1) + "% is below the post-thaw criterion (> " + S("thawViab") + "%). Flag it before continuing." });
+      else if (v.via >= S("thawViab")) out.msgs.push({ c: "good", t: "Viability OK (> " + S("thawViab") + "%)." });
+      if (v.exp > 0 && v.vcd < v.exp * 0.8) out.msgs.push({ c: "warn", t: "VCD is more than 20% below the expected " + sig(v.exp) + " e6/mL. Check mixing before sampling, the count, and the vial record." });
+      if (v.exp > 0 && v.vcd > v.exp * 1.2) out.msgs.push({ c: "info", t: "VCD is more than 20% above expected. Fine for the cells; note it in the ELN." });
+      if (v.via > 0 && v.via < S("thawViab") || (v.exp > 0 && v.vcd < v.exp * 0.8)) out.msgs.push({ c: "info", t: "If the count is off, the lab's fallback is to thaw another vial, after discussing it first." });
+      out.msgs.push({ c: "info", t: "First passage on day 3 or 4, preferably day 4, scaling up to a 500 mL flask (200 mL)." });
+      if (!Sconf("td")) out.msgs.push({ c: "warn", t: "Day 3 / day 4 predictions use a placeholder doubling time." });
       return out;
     }
   },
@@ -568,8 +628,9 @@ function showTool(id) {
   const mode = st._mode || (t.modes ? t.modes[0].id : null);
   const hide = t.id === "c1v1" ? mode : null;
   const fields = t.fields.filter(fl => fl.id !== hide).map(fl => {
-    const val = st[fl.id] !== undefined ? st[fl.id] : fl.def();
-    const chip = fl.set ? (Sconf(fl.set) ? "" : `<span class="chip">placeholder</span>`) : "";
+    const val = st[fl.id] !== undefined ? st[fl.id] : fl.def(mode);
+    const setId = typeof fl.set === "function" ? fl.set(mode) : fl.set;
+    const chip = setId ? (Sconf(setId) ? "" : `<span class="chip">to confirm</span>`) : "";
     return `<div class="field"><label for="f-${fl.id}">${esc(fl.label)} ${chip}</label><div class="inp"><input id="f-${fl.id}" type="number" inputmode="decimal" step="any" value="${val}"><span class="u">${fl.u}</span></div></div>`;
   }).join("");
   const formula = typeof t.formula === "string" ? t.formula : t.formula[mode];
@@ -578,6 +639,7 @@ function showTool(id) {
     <div class="card">
       <div><div class="label">${t.group === "main" ? "At the hood" : "Planning"}</div><h2>${esc(t.title)}</h2></div>
       ${t.modes ? `<div class="seg" role="group">${t.modes.map(m => `<button data-mode="${m.id}" aria-pressed="${m.id === mode}">${m.l}</button>`).join("")}</div>` : ""}
+      ${t.presets ? `<div><div class="label" style="margin-bottom:6px">${t.presets.label}</div><div class="mini">${t.presets.options.map(o => `<button data-preset="${o.v}">${o.l}</button>`).join("")}</div></div>` : ""}
       <div class="fields">${fields}</div>
       <div class="row"><button class="btn" id="reset-in">Reset to lab values</button></div>
     </div>
@@ -590,7 +652,8 @@ function showTool(id) {
   $("#toollist").hidden = true; $("#toolview").hidden = false;
   $("#back").onclick = closeTool;
   $("#reset-in").onclick = () => { store.inputs[id] = { _mode: mode }; save(); showTool(id); };
-  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st._mode = b.dataset.mode; save(); showTool(id); });
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st._mode = b.dataset.mode; (t.modeResets || []).forEach(k => delete st[k]); save(); showTool(id); });
+  document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => { const el = document.getElementById("f-" + t.presets.field); el.value = b.dataset.preset; st[t.presets.field] = b.dataset.preset; save(); compute(); });
   document.querySelectorAll("#toolview input").forEach(i => i.addEventListener("input", () => { st[i.id.slice(2)] = i.value; save(); compute(); }));
   compute();
   window.scrollTo(0, 0);
@@ -618,33 +681,84 @@ const STEPS = [
     why: ["Catches gross contamination the counter won't show", "A suspicious flask is never opened in the BSC"],
     confirm: ["What to do with a suspicious flask (flag, isolate, inactivate)"] },
   { n: "2", name: "Sample", s: "Swirl, take ~200 µL",
-    lab: ["Swirl to homogenize", "Pipette ~200 µL straight from the open flask for the Vi-CELL BLU"],
+    lab: ["Swirl to homogenize", "Take ~200 µL straight from the open flask for the Vi-CELL BLU, with a plastic pipette on the pipette controller (a P1000 would touch the flask walls)", "Sample right after opening; no wait as for a thaw"],
     why: ["Cells settle in minutes; an unswirled sample misreads density"], confirm: [] },
   { n: "3", name: "Count", s: "Vi-CELL BLU: VCD and viability",
     lab: ["Count immediately", "Record VCD and viability", "One count per flask; flasks run as 2–3 replicates", "~95% viability is good"],
     why: ["VCD sets the dilution; viability tracks culture health"],
     confirm: ["Passage VCD window", "Viability action threshold"] },
   { n: "4", name: "Calculate", s: "Culture and medium volumes",
-    lab: ["ELN template normally; by hand while it's broken (use the Routine split tool)", "Each replicate calculated independently"],
+    lab: ["ELN template normally; by hand while it's broken (use the Routine split tool)", "Each replicate calculated independently", "Passage every 3 or 4 days depending on planning; 4 preferred", "Scale up to the next flask size at each passage when the cell count allows", "Working volume = the flask's maximum volume (250 mL → 50 mL, 500 mL → 200 mL, 2 L → 800 mL), entered at every passage"],
     why: ["A fixed seeding density keeps passages comparable and in exponential growth"],
-    confirm: ["Target seeding density", "Whether final volume changes with passage number"] },
+    confirm: ["Seeding density by interval: 4 days → 0.3, 3 days → 0.55 (double-check with the team)"] },
   { n: "5", name: "Seed", s: "Medium first, then cells",
     lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the passage ID: XX-GKbb-Vv-[parent tag]-Pp-[child tag], e.g. 99-GK78-V4-ZBT01-P3-TLE01 (Labels tab builds it)"],
     why: ["Cells land in a full volume, not a thin film", "The label traces each flask to its parent"],
     confirm: [] },
   { n: "6", name: "Incubate", s: "Shaking incubator, 3–4 days",
-    lab: ["Dedicated shaking incubator: temperature, CO₂, humidity, rpm, throw", "Alarm beeps if rpm can't reach setpoint"],
+    lab: ["Multitron shaking incubator: 37 °C, 120 rpm, 8% CO₂, 80% humidity (always these settings for HEK)", "Alarm beeps if rpm can't reach setpoint"],
     why: ["Shaking keeps cells suspended and drives oxygen transfer; 800 mL in 2 L leaves the headspace for it"],
-    confirm: ["Setpoints (°C, % CO₂, % RH, rpm, throw in mm)"] },
+    confirm: ["Throw in mm"] },
   { n: "7", side: true, name: "Document and close", s: "ELN, waste, cabinet",
     lab: ["ELN: flask/sample IDs (passage number), VCD, viability, volumes, medium lot, operator", "Keep old flasks for two passages: three generations in the incubator", "Oldest generation inactivated with Virkon S in a jerrycan with water, then disposed of", "BSC disinfected, closed, UV"],
     why: ["Backups let you fall back if the newest flask is lost", "Passage number matters because cell age affects productivity"],
-    confirm: ["Maximum passage / days after thaw", "Thaw frequency and cell bank", "Virkon S concentration and contact time"] }
+    confirm: ["Maximum passage / days after thaw", "Thaw frequency and cell bank (see Thawing protocol)", "Virkon S concentration and contact time"] }
 ];
+const THAW_STEPS = [
+  { n: "1", name: "Switch on and pre-warm", s: "BSC, two Multitrons, medium, water",
+    lab: ["Switch on the BSC; it's ready when the light comes on", "Pre-warm Multitron: 37 °C, 60 rpm, CO₂ 0%, humidity off", "Medium in it for 30 min to 1 h", "MilliQ water in a Falcon tube in the same incubator (the thaw bath)", "Main Multitron: 37 °C, 120 rpm, 8% CO₂, 80% humidity (always these settings for HEK)"],
+    why: ["Cells must land in warm medium and go straight into a stable incubator", "Warming the water alongside the medium gives a 37 °C bath without a water bath, a classic contamination source"],
+    confirm: ["Volume of MilliQ water and Falcon size"] },
+  { n: "2", name: "ELN entries", s: "Equipment and medium, once medium is warm",
+    lab: ["Open the ELN (SharePoint › General › ELN; training experiments for now)", "Material information tab (ELN perspective) → open inventory domain", "Equipment: BSC GTPS n°1 and Multitron 1", "Medium: cursor in the yellow field, scan the barcode, then Retrieve details from inventory"],
+    why: ["Equipment and medium lot are traced before the cells are touched, so nothing is back-filled from memory"],
+    confirm: ["Inoculum name to enter: XX-GKbb-Vv"] },
+  { n: "3", name: "Prepare the flask", s: "49 mL medium in a 250 mL flask, labelled P0",
+    lab: ["Put on oversleeves; full aseptic sequence into the BSC", "49 mL pre-warmed medium into a 250 mL shake flask (50 or 100 mL pipette on the pipette controller)", "Label it with the P0 ID: XX-GKbb-Vv-P0-TLE01 (Labels › + Thaw)"],
+    why: ["Flask ready before thawing means the cells spend the least possible time in concentrated DMSO", "50 mL is the maximum (= working) volume of a 250 mL flask"],
+    confirm: [] },
+  { n: "4", name: "Fetch and thaw the vial", s: "From the −150 °C, then 2–3 min in warm water",
+    lab: ["Take the vial from the −150 °C freezer in the inventory room and log it out in the ELN", "Bring it to the lab and start thawing as quickly as possible", "Hold the vial at the surface of the warm MilliQ water for 2–3 min, until everything is liquid", "Wipe and disinfect the vial before it enters the BSC"],
+    why: ["A vial that warms slowly on the way loses viability: slow warming lets ice crystals regrow", "Fast thawing limits ice recrystallisation, which damages membranes", "Keeping the cap above the water keeps the thread dry and clean"],
+    confirm: [] },
+  { n: "5", name: "Seed", s: "Resuspend, 1 mL into the flask, swirl",
+    lab: ["P1000: 10 gentle up-and-downs in the vial", "Add the 1 mL to the flask (final 50 mL)", "Swirl the flask for 10 s", "Discard the empty vial"],
+    why: ["A 1:50 dilution brings DMSO to a harmless level without centrifuging", "Freshly thawed cells are fragile: mix gently, no foaming"],
+    confirm: ["No centrifugation / medium exchange step: confirm"] },
+  { n: "6", name: "Incubate, then count", s: "Main Multitron first, then 200 µL for the Vi-CELL",
+    lab: ["Flask into the main Multitron for about 5 min before sampling, to let the cells recover (for passaging you sample straight away)", "Take 200 µL into an Eppendorf with a plastic pipette on the pipette controller, not the P1000: the flask is too wide and the P1000 would touch the walls", "Vi-CELL BLU count: expect VCD ≈ 0.3 × 10⁶/mL and viability > 90%", "Sample name: P0 ID + day 0, e.g. …-P0-TLE01-0", "If the count is off: thaw another vial, after discussing it first"],
+    why: ["The day-0 count is the baseline for recovery and for timing the first passage", "Anything that touches the inside of the flask neck is a contamination risk"],
+    confirm: [] },
+  { n: "7", side: true, name: "First passage (P1)", s: "Day 3 or 4, scale up to 500 mL flask",
+    lab: ["Day 3 or day 4 depending on planning; day 4 preferred", "Normally scale up at this passage: 500 mL flask, 200 mL", "Flasks are scaled up at each passage when the cell count allows; enter the working volume at every passage", "Seeding target depends on the interval to the following passage: 0.3 × 10⁶/mL if it's in 4 days, 0.55 if it's in 3 days (Routine split has both)", "Working volume is always the flask's maximum: 250 mL → 50 mL, 500 mL → 200 mL, 2 L → 800 mL"],
+    why: ["HEK cells tolerate a 3- or 4-day rhythm, which lets passages avoid weekends", "Scaling up early builds the cell mass needed for the 2 L flasks"],
+    confirm: ["Seeding density by interval: 4 days → 0.3, 3 days → 0.55 (double-check with the team)"] }
+];
+const THAW_CHECK = [
+  { g: "Switch on and pre-warm", items: ["BSC on (ready when the light comes on)", "Pre-warm Multitron set: 37 °C, 60 rpm, CO₂ 0%, humidity off", "Medium in to pre-warm (30 min – 1 h)", "MilliQ water in a Falcon, same incubator", "Main Multitron set: 37 °C, 120 rpm, 8% CO₂, 80% humidity"] },
+  { g: "ELN, once medium is warm", items: ["ELN open; Material information → inventory domain", "Equipment added: BSC GTPS n°1, Multitron 1", "Medium scanned in the yellow field + details retrieved"] },
+  { g: "At the hood", items: ["Oversleeves on, items disinfected", "49 mL medium in a 250 mL shake flask", "Flask labelled with the P0 ID", "Vial taken from the −150 °C (inventory room), logged out in the ELN, brought over quickly", { t: "Vial thawed at the water surface, 2–3 min, fully liquid", timer: 120 }, "Vial wiped and disinfected before the BSC", "P1000: 10 up-and-downs", "1 mL added to the flask", { t: "Flask swirled for 10 s", timer: 10 }, "Empty vial discarded"] },
+  { g: "Incubate, then count", items: [{ t: "Flask in the main Multitron for about 5 min", timer: 300 }, "200 µL sample in an Eppendorf (plastic pipette on pipette controller, not the P1000)", "Vi-CELL BLU count done", "VCD ≈ 0.3 × 10⁶/mL and viability > 90% (if not: discuss, thaw another vial)", "Flask back in the main Multitron", "ELN: P0 ID, vial ID, VCD, viability, medium lot"] }
+];
+const PROTOS = {
+  pass: { steps: () => STEPS, check: () => CHECK, key: "c", loop: 1, loopText: "↻ loop: steps 1–6 repeat every 3–4 days" },
+  thaw: { steps: () => THAW_STEPS, check: () => THAW_CHECK, key: "t", loop: -1 }
+};
+const curProto = () => PROTOS[store.lab.proto] ? store.lab.proto : "pass";
 function renderProtocol() {
+  const P = PROTOS[curProto()];
+  document.querySelectorAll("[data-proto]").forEach(b => b.setAttribute("aria-pressed", b.dataset.proto === curProto()));
   const li = a => `<ul class="list">${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  $("#pv-steps-view").innerHTML = STEPS.map((s, i) => `
-    ${i === 1 ? '<div class="loopnote">↻ loop: steps 1–6 repeat every 3–4 days</div>' : ""}
+  const head = curProto() === "thaw" ? `<div class="card">
+      <div><div class="label">Thawing</div><h2>From vial to P0 flask</h2></div>
+      <p class="small muted">As observed on 2 Oct 2026. 1 mL vial into 49 mL medium in a 250 mL flask, no centrifugation. First passage on day 3 or 4.</p>
+      <div class="setpoints">
+        <div class="sp"><b>Pre-warm Multitron</b><span>37 °C · 60 rpm · CO₂ 0% · humidity off</span><br>Medium 30 min – 1 h, plus MilliQ water in a Falcon</div>
+        <div class="sp"><b>Main Multitron</b><span>37 °C · 120 rpm · 8% CO₂ · 80% RH</span><br>Where the P0 flask goes</div>
+      </div>
+    </div>` : "";
+  $("#pv-steps-view").innerHTML = head + P.steps().map((s, i) => `
+    ${i === P.loop ? `<div class="loopnote">${P.loopText}</div>` : ""}
     <details class="step${s.side ? " side" : ""}">
       <summary><span class="n">${s.n}</span><span><b>${esc(s.name)}</b><span class="s">${esc(s.s)}</span></span><span class="chev">›</span></summary>
       <div class="body">
@@ -656,22 +770,51 @@ function renderProtocol() {
   renderChecklist();
 }
 const CHECK = [
-  { g: "Before", items: ["Medium pre-warmed in the incubator", "New 2 L flasks labeled with passage IDs (Labels tab)", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
-  { g: "Per flask", items: ["Visual check: colour, turbidity, clumps, cap/filter", "Swirl, sample ~200 µL", "Count: VCD and viability", "Viability above threshold, VCD in window", "Calculate culture and medium volumes", "Medium into the new flask", "Culture into the new flask", "Cap closed, flask into shaking incubator"] },
+  { g: "Before", items: ["Medium pre-warmed in the incubator", "New flasks (size per scale-up) labeled with passage IDs (Labels tab)", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
+  { g: "Per flask", items: ["Visual check: colour, turbidity, clumps, cap/filter", "Swirl, sample ~200 µL (plastic pipette on pipette controller)", "Count: VCD and viability", "Viability above threshold, VCD in window", "Calculate culture and medium volumes", "Medium into the new flask", "Culture into the new flask", "Cap closed, flask into shaking incubator"] },
   { g: "After", items: ["ELN: flask and sample IDs, VCD, viability, volumes, medium lot", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
 ];
+const fmtT = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+let timerInt = null;
+function startTimer(btn) {
+  const total = +btn.dataset.timer;
+  if (timerInt) { clearInterval(timerInt); timerInt = null; document.querySelectorAll(".timer.run").forEach(b => { b.classList.remove("run"); b.textContent = "Start " + fmtT(+b.dataset.timer); }); if (btn.dataset.on) { delete btn.dataset.on; return; } }
+  document.querySelectorAll(".timer").forEach(b => delete b.dataset.on);
+  btn.dataset.on = "1"; btn.classList.remove("end"); btn.classList.add("run");
+  const endAt = Date.now() + total * 1000;
+  const tick = () => {
+    const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    if (!btn.isConnected) { clearInterval(timerInt); timerInt = null; return; }
+    btn.textContent = fmtT(left) + " · tap to stop";
+    if (left <= 0) {
+      clearInterval(timerInt); timerInt = null; delete btn.dataset.on;
+      btn.classList.remove("run"); btn.classList.add("end"); btn.textContent = "Done · restart " + fmtT(total);
+      try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) {}
+      try { const A = window.AudioContext || window.webkitAudioContext; const ac = new A(); [0, 0.35, 0.7].forEach(t => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(0.25, ac.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + t + 0.25); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.26); }); } catch (e) {}
+    }
+  };
+  tick(); timerInt = setInterval(tick, 250);
+}
 function renderChecklist() {
+  const P = PROTOS[curProto()], K = P.key;
   let k = 0, total = 0, done = 0;
-  const html = CHECK.map(g => `<div class="grp">${g.g}</div>` + g.items.map(it => { const id = "c" + (k++); total++; const on = !!store.check[id]; if (on) done++; return `<label><input type="checkbox" data-c="${id}" ${on ? "checked" : ""}><span>${esc(it)}</span></label>`; }).join("")).join("");
+  const html = P.check().map(g => `<div class="grp">${g.g}</div>` + g.items.map(it => {
+    const id = K + (k++); total++; const on = !!store.check[id]; if (on) done++;
+    const t = typeof it === "string" ? it : it.t;
+    return `<label><input type="checkbox" data-c="${id}" ${on ? "checked" : ""}><span${it.timer ? ' class="tw"' : ""}>${esc(t)}${it.timer ? `<button type="button" class="timer" data-timer="${it.timer}">Start ${fmtT(it.timer)}</button>` : ""}</span></label>`;
+  }).join("")).join("");
+  const count = () => Object.entries(store.check).filter(([a, b]) => b && a[0] === K).length;
   $("#pv-check-view").innerHTML = `
     <div class="card">
-      <div class="row" style="justify-content:space-between"><div><div class="label">Bench checklist</div><b id="ck-count">${done} / ${total}</b></div><button class="btn" id="ck-reset">Reset</button></div>
+      <div class="row" style="justify-content:space-between"><div><div class="label">${curProto() === "thaw" ? "Thawing checklist" : "Passaging checklist"}</div><b id="ck-count">${done} / ${total}</b></div><button class="btn" id="ck-reset">Reset</button></div>
       <div class="progress"><i id="ck-bar" style="width:${done / total * 100}%"></i></div>
       <div class="check">${html}</div>
     </div>`;
-  document.querySelectorAll("[data-c]").forEach(c => c.onchange = () => { store.check[c.dataset.c] = c.checked; save(); const d = Object.values(store.check).filter(Boolean).length; $("#ck-count").textContent = d + " / " + total; $("#ck-bar").style.width = d / total * 100 + "%"; });
-  $("#ck-reset").onclick = () => { store.check = {}; save(); renderChecklist(); };
+  document.querySelectorAll("[data-c]").forEach(c => c.onchange = () => { store.check[c.dataset.c] = c.checked; save(); const d = count(); $("#ck-count").textContent = d + " / " + total; $("#ck-bar").style.width = d / total * 100 + "%"; });
+  document.querySelectorAll("#pv-check-view .timer").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); startTimer(b); });
+  $("#ck-reset").onclick = () => { Object.keys(store.check).forEach(a => { if (a[0] === K) delete store.check[a]; }); save(); renderChecklist(); };
 }
+document.querySelectorAll("[data-proto]").forEach(b => b.onclick = () => { store.lab.proto = b.dataset.proto; save(); renderProtocol(); window.scrollTo(0, 0); });
 $("#pv-steps").onclick = () => setPV("steps");
 $("#pv-check").onclick = () => setPV("check");
 function setPV(w) { $("#pv-steps").setAttribute("aria-pressed", w === "steps"); $("#pv-check").setAttribute("aria-pressed", w === "check"); $("#pv-steps-view").hidden = w !== "steps"; $("#pv-check-view").hidden = w !== "check"; }
@@ -703,7 +846,7 @@ function renderLearn() {
           <text x="186" y="186" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)">time → (VCD on a log scale)</text>
         </svg>
       </div>
-      <p class="small">Seed at about ${sig(lo)} × 10⁶/mL, passage in the ${sig(a)}–${sig(b)} × 10⁶/mL window. Wait too long and cells enter stationary phase: viability drops, aggregates form and they recover more slowly after the split.</p>
+      <p class="small">Seed at ${sig(lo)}–${sig(S("seed3"))} × 10⁶/mL depending on the interval, passage in the ${sig(a)}–${sig(b)} × 10⁶/mL window. Wait too long and cells enter stationary phase: viability drops, aggregates form and they recover more slowly after the split.</p>
     </div>
 
     <div class="card">
@@ -727,7 +870,7 @@ function renderLearn() {
     <div class="card concept">
       <div class="label">Shake flasks</div>
       <h3>Oxygen, volume and shaking</h3>
-      <p>Cells get oxygen through the liquid surface that the orbital motion spreads along the flask wall. That's why a 2 L flask holds only 800 mL (40% of nominal, near the upper end of the usual 20–40%). More volume means less surface per cell and less oxygen.</p>
+      <p>Cells get oxygen through the liquid surface that the orbital motion spreads along the flask wall. That's why each flask has a maximum volume, which the lab always uses as its working volume: 50 mL in a 250 mL flask, 200 mL in a 500 mL flask, 800 mL in a 2 L flask (20–40% of nominal). More volume means less surface per cell and less oxygen.</p>
       <p>rpm and throw (orbital diameter) set mixing and oxygen transfer. More shaking means more oxygen but more shear stress. The vented cap lets CO₂ in to keep the bicarbonate-buffered medium at the right pH.</p>
     </div>
 
@@ -756,6 +899,8 @@ function renderLearn() {
       <div class="label">Key numbers in this lab</div>
       <table class="kv"><tbody>
         ${SETTINGS.map(s => `<tr><td>${esc(s.t)}</td><td>${sig(S(s.id))} ${s.u} ${Sconf(s.id) ? "" : '<span class="chip">to confirm</span>'}</td></tr>`).join("")}
+        <tr><td>Incubator (HEK)</td><td>37 °C · 120 rpm · 8% CO₂ · 80% RH</td></tr>
+        <tr><td>Flask → working volume</td><td>250 mL → 50 · 500 mL → 200 · 2 L → 800 mL</td></tr>
         <tr><td>Vi-CELL sample</td><td>~200 µL</td></tr>
         <tr><td>Pipettes</td><td>50 and 100 mL</td></tr>
         <tr><td>Generations kept</td><td>3 (current + 2 backups)</td></tr>
@@ -996,7 +1141,7 @@ function buildPass() {
         ${fld("pb-parent", "Parent flask tag", b.parent, { max: 5, ph: +b.p === 0 ? "none at P0" : "ZBT01", disabled: +b.p === 0 })}
         ${fld("pb-init", "Your initials", b.init, { max: 3, ph: "TLE" })}
         ${fld("pb-first", "First vessel no.", b.first, { type: "number", min: 1, u: "#" })}
-        ${fld("pb-n", "Flasks to make", b.n, { type: "number", min: 1, u: "flasks" })}
+        ${fld("pb-n", "Flasks to make", +b.p === 0 ? 1 : b.n, { type: "number", min: 1, u: "flasks", disabled: +b.p === 0 })}
         ${fld("pb-date", "Inoculation date (day 0)", b.date, { type: "date", full: true })}
       </div>
     </div>
@@ -1005,7 +1150,7 @@ function buildPass() {
   Object.entries(map).forEach(([k, id]) => $("#" + id).addEventListener("input", e => {
     b[k] = e.target.value;
     if (k === "first") b.firstEdited = true;
-    if (k === "p") { const z = +b.p === 0; const pi = $("#pb-parent"); pi.disabled = z; pi.placeholder = z ? "none at P0" : "ZBT01"; }
+    if (k === "p") { const z = +b.p === 0; const pi = $("#pb-parent"); pi.disabled = z; pi.placeholder = z ? "none at P0" : "ZBT01"; const ni = $("#pb-n"); ni.disabled = z; ni.value = z ? 1 : (b.n || 1); }
     if (k !== "first" && !b.firstEdited) { b.first = nextChildNo(norm(b.proj), norm(b.gk), norm(b.vial), parseInt(b.p, 10), norm(b.init)); $("#pb-first").value = b.first; }
     save(); pbCompute();
   }));
@@ -1014,7 +1159,7 @@ function buildPass() {
 function pbCompute() {
   const b = store.lab.pb, out = $("#pb-out"), errs = [];
   const proj = norm(b.proj), gk = norm(b.gk), vial = norm(b.vial), init = norm(b.init), parent = norm(b.parent);
-  const p = parseInt(b.p, 10), n = Math.max(1, parseInt(b.n, 10) || 1), first = parseInt(b.first, 10);
+  const p = parseInt(b.p, 10), n = p === 0 ? 1 : Math.max(1, parseInt(b.n, 10) || 1), first = parseInt(b.first, 10);
   if (!/^\d{2}$/.test(proj)) errs.push("Project code: 2 digits, from the ELN Product list.");
   if (!/^\d{2,3}$/.test(gk)) errs.push("Cell bank number: 2 or 3 digits.");
   if (!/^\d{1,3}$/.test(vial)) errs.push("Vial number: 1 to 3 digits.");
@@ -1029,7 +1174,7 @@ function pbCompute() {
   const msgs = [];
   if (existing.length) msgs.push({ c: "bad", t: `Already in My flasks: ${existing.join(", ")}. Each ID must be unique.` });
   else if (first < sug) msgs.push({ c: "warn", t: `You already saved ${init}${pad2(sug - 1)} at P${p} for this vial. Next free number is ${pad2(sug)}.` });
-  if (p === 0) msgs.push({ c: "info", t: "Thaw is P0: there is no parent, so the parent tag is left out." });
+  if (p === 0) msgs.push({ c: "info", t: "Thaw is P0: no parent tag, and always one flask per vial (1 mL vial into one 250 mL flask at 50 mL)." });
   else msgs.push({ c: "info", t: `Your vessel numbers count all flasks you inoculate at P${p}, whatever their parent. Check the ELN for ${init} tags already used at P${p}.` });
   out.innerHTML = `<div class="label">Labels</div>
     ${passAnatomy({ proj, gk, vial, p, parent, child: init + pad2(first) })}

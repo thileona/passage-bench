@@ -1,5 +1,5 @@
 // Network-first for the app itself (so updates arrive when online), cache fallback offline.
-const CACHE = "passage-bench-v2";
+const CACHE = "passage-bench-v8";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -16,7 +16,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
+      fetch(req, { cache: "no-cache" }).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
         .catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
     );
   } else if (url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com")) {
