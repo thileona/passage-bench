@@ -329,11 +329,11 @@ const SETTINGS = [
   { id: "seed", t: "Seeding density, next passage in 4 days", h: "Preferred interval. Lower density because the cells grow one day longer", u: "e6/mL", def: 0.3, conf: true },
   { id: "seed3", t: "Seeding density, next passage in 3 days", h: "Higher density because the cells have one day less to grow (seen in the ELN template)", u: "e6/mL", def: 0.55, conf: true },
   { id: "p1vol", t: "First passage after thaw: volume", h: "500 mL flask", u: "mL", def: 200, conf: true },
-  { id: "passMin", t: "Passage window, lower VCD", h: "Below this, the flask is usually not split yet", u: "e6/mL", def: 2.0, conf: false },
-  { id: "passMax", t: "Passage window, upper VCD", h: "Above this, cells risk leaving exponential growth", u: "e6/mL", def: 4.0, conf: false },
+  { id: "passMin", t: "Passage window, lower VCD (other cell banks)", h: "Used only when the cell bank is set to Other. GK001 and GK005 have fixed windows", u: "e6/mL", def: 2.0, conf: false },
+  { id: "passMax", t: "Passage window, upper VCD (other cell banks)", h: "Used only when the cell bank is set to Other", u: "e6/mL", def: 4.0, conf: false },
   { id: "vol", t: "Working volume", h: "Culture volume per flask", u: "mL", def: 800, conf: true },
   { id: "flask", t: "Flask nominal size", h: "Shake flask capacity", u: "mL", def: 2000, conf: true },
-  { id: "viab", t: "Minimum viability", h: "Below this, flag the flask", u: "%", def: 95, conf: false },
+  { id: "viab", t: "Minimum viability at passage", h: "Below this, flag the flask (day-0 thaw uses 90%)", u: "%", def: 95, conf: true },
   { id: "td", t: "Doubling time", h: "Lab value; compare with your own in the growth tool", u: "h", def: 24, conf: true },
   { id: "days", t: "Days between passages", h: "Usual interval", u: "days", def: 3.5, conf: true },
   { id: "thawVol", t: "Thaw: final volume", h: "Vial + medium in the thaw flask", u: "mL", def: 50, conf: true },
@@ -341,8 +341,12 @@ const SETTINGS = [
   { id: "thawViab", t: "Thaw: minimum viability", h: "First count right after seeding", u: "%", def: 90, conf: true },
   { id: "maxP", t: "Maximum passage number", h: "Cell age limit after thaw; restart from a new vial after this", u: "P", def: 10, conf: true }
 ];
-function S(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
-function Sconf(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.conf !== undefined ? v.conf : d.conf; }
+function rawS(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
+const BANKS = { "001": { n: "GK001", lo: 3, hi: 4 }, "005": { n: "GK005", lo: 4.5, hi: 5.5 } };
+const bank = () => BANKS[store.lab.bank] || null;
+function S(id) { const B = bank(); if (B && id === "passMin") return B.lo; if (B && id === "passMax") return B.hi;
+  const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
+function Sconf(id) { if (bank() && (id === "passMin" || id === "passMax")) return true; const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.conf !== undefined ? v.conf : d.conf; }
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -351,6 +355,9 @@ function f(x, d = 1) { if (!isFinite(x)) return "–"; return x.toLocaleString("
 function sig(x) { if (!isFinite(x)) return "–"; const a = Math.abs(x); return f(x, a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : 3); }
 function cells(x) { if (!isFinite(x)) return "–"; if (x >= 1e9) return f(x / 1e9, 2) + " × 10⁹"; return f(x / 1e6, 1) + " × 10⁶"; }
 const PIPS = [5, 10, 25, 50, 100];
+const plusDays = n => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return d; };
+const dayLabel = n => plusDays(n).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+const isWeekend = n => [0, 6].includes(plusDays(n).getDay());
 const FLASKS = [{ n: "250 mL", v: 50 }, { n: "500 mL", v: 200 }, { n: "2 L", v: 800 }];
 function pipetting(v) {
   if (!(v > 0)) return "";
@@ -365,8 +372,9 @@ function pipetting(v) {
 /* ---------- calculators ---------- */
 const TOOLS = [
   {
-    id: "split", group: "main", ic: "÷", title: "Routine split", d: "From your count to culture and medium volumes",
-    modes: [{ id: "d4", l: "Next passage in 4 days" }, { id: "d3", l: "In 3 days" }], modeResets: ["t"],
+    id: "split", bank: true, group: "main", ic: "÷", title: "Routine split", d: "From your count to culture and medium volumes",
+    modes: () => [{ id: "d4", l: "Next: " + dayLabel(4) + " (4 d)" }, { id: "d3", l: "Next: " + dayLabel(3) + " (3 d)" }], modeResets: ["t"],
+    autoMode: () => isWeekend(4) && !isWeekend(3) ? "d3" : "d4",
     fields: [
       { id: "m", label: "Measured VCD", u: "e6/mL", def: () => 3.0 },
       { id: "via", label: "Viability", u: "%", def: () => 97 },
@@ -377,8 +385,8 @@ const TOOLS = [
     ],
     presets: { field: "v", label: "New flask", options: FLASKS.map(x => ({ l: x.n + " · " + x.v + " mL", v: x.v })) },
     formula: "V_culture = target VCD × final volume / measured VCD\nV_medium  = final volume − V_culture",
-    how: ["Measured and target VCD must be in the same unit (here ×10⁶ cells/mL).", "Add the fresh medium to the new flask first, then the culture volume.", "Each replicate flask is calculated from its own count.", "Working volume is always the flask's maximum: 250 mL flask → 50 mL, 500 mL → 200 mL, 2 L → 800 mL.", "The flask is scaled up at each passage when the cell count allows, so the working volume is entered every time."],
-    calc(v) {
+    how: ["Measured and target VCD must be in the same unit (here ×10⁶ cells/mL).", "Add the fresh medium to the new flask first, then the culture volume.", "Each replicate flask is calculated from its own count.", "Working volume is always the flask's maximum: 250 mL flask → 50 mL, 500 mL → 200 mL, 2 L → 800 mL.", "The flask is scaled up at each passage when the cell count allows, so the working volume is entered every time.", "The interval is picked automatically from today's date: 4 days by default (seed at 0.3), 3 days if day 4 falls on a weekend and day 3 doesn't (seed at 0.55). Tap the other option to override."],
+    calc(v, mode) {
       const out = { res: [], msgs: [] };
       if (!(v.v > 0)) return { err: "Enter the working volume of the new flask (or tap a flask size). It's entered at every passage because the flask is scaled up whenever possible." };
       if (!(v.m > 0 && v.t > 0)) return { err: "Enter the measured VCD and the target VCD." };
@@ -400,8 +408,12 @@ const TOOLS = [
         out.res.push({ l: "Largest flask this source can seed", v: big ? big.n + " (" + big.v + " mL)" : "none", i: FLASKS.map(x => x.n + ": " + f(v.t * x.v / v.m, 1) + " mL").join(" · ") });
         if (big && big.v > v.v) out.msgs.push({ c: "info", t: "Enough cells to scale up to a " + big.n + " flask (" + big.v + " mL). Flasks are scaled up at each passage when possible." });
       } else out.msgs.push({ c: "info", t: "Add the culture volume in the source flask to see whether you can scale up." });
+      const nd = mode === "d3" ? 3 : 4;
+      out.msgs.push({ c: isWeekend(nd) ? "warn" : "info", t: "Next passage " + dayLabel(nd) + " (" + nd + " days) → seeding target " + sig(nd === 3 ? S("seed3") : S("seed")) + " × 10⁶/mL." + (isWeekend(nd) ? " That's a weekend: switch interval if you can." : "") });
       if (v.via > 0 && v.via < S("viab")) out.msgs.push({ c: "warn", t: "Viability " + f(v.via, 1) + "% is below your threshold (" + S("viab") + "%). Flag it before passaging." });
       else if (v.via >= S("viab")) out.msgs.push({ c: "good", t: "Viability OK (≥ " + S("viab") + "%)." });
+      if (v.m >= S("passMin") && v.m <= S("passMax") && Sconf("passMin")) out.msgs.push({ c: "good", t: "VCD is inside the " + (bank() ? bank().n + " " : "") + "passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL)." });
+      if (!Sconf("passMin")) out.msgs.push({ c: "warn", t: "Passage window is a placeholder: pick the cell bank above, or set the window in Lab values." });
       if (v.m < S("passMin")) out.msgs.push({ c: "warn", t: "Measured VCD is below the passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL). Consider waiting." });
       if (v.m > S("passMax")) out.msgs.push({ c: "warn", t: "Measured VCD is above the passage window (" + S("passMin") + "–" + S("passMax") + " × 10⁶/mL). Cells may be leaving exponential phase; note it in the ELN." });
       if (vc > v.v * 0.5) out.msgs.push({ c: "warn", t: "More than half the final volume is old culture. Spent medium will carry over; check the numbers." });
@@ -479,7 +491,7 @@ const TOOLS = [
     }
   },
   {
-    id: "thaw", group: "main", ic: "❄", title: "Thaw check", d: "Post-thaw count: recovery, vial density, days to first passage",
+    id: "thaw", bank: true, group: "main", ic: "❄", title: "Thaw check", d: "Post-thaw count: recovery, vial density, days to first passage",
     fields: [
       { id: "vcd", label: "Measured VCD after thaw", u: "e6/mL", def: () => 0.3 },
       { id: "via", label: "Viability", u: "%", def: () => 92 },
@@ -502,6 +514,8 @@ const TOOLS = [
       const lo = S("passMin"), td = S("td");
       const d3 = v.vcd * Math.pow(2, 72 / td), d4 = v.vcd * Math.pow(2, 96 / td);
       out.res.push({ l: "Predicted VCD, day 3 / day 4", v: sig(d3) + " / " + sig(d4), i: "e6/mL · Td " + f(td, 0) + " h, no lag" });
+      const inW = x => x >= S("passMin") && x <= S("passMax");
+      if (Sconf("passMin")) out.msgs.push({ c: "info", t: (bank() ? bank().n + " window " : "Window ") + S("passMin") + "–" + S("passMax") + ": predicted day 3 is " + (inW(d3) ? "inside" : d3 < S("passMin") ? "below" : "above") + ", day 4 is " + (inW(d4) ? "inside" : d4 < S("passMin") ? "below" : "above") + " (before any post-thaw lag)." });
       const need = S("seed") * 1e6 * S("p1vol");
       out.res.push({ l: "First passage needs", v: cells(need), i: f(S("p1vol"), 0) + " mL at " + sig(S("seed")) + " e6/mL (500 mL flask)" });
       if (v.via > 0 && v.via < S("thawViab")) out.msgs.push({ c: "bad", t: "Viability " + f(v.via, 1) + "% is below the post-thaw criterion (> " + S("thawViab") + "%). Flag it before continuing." });
@@ -541,7 +555,7 @@ const TOOLS = [
     }
   },
   {
-    id: "plan", group: "plan", ic: "↦", title: "Seeding planner", d: "Pick a seeding VCD to hit a density on passage day",
+    id: "plan", bank: true, bankResets: ["tgt"], group: "plan", ic: "↦", title: "Seeding planner", d: "Pick a seeding VCD to hit a density on passage day",
     fields: [
       { id: "tgt", label: "VCD wanted on passage day", u: "e6/mL", def: () => (S("passMin") + S("passMax")) / 2 },
       { id: "days", label: "Days until next passage", u: "days", def: () => S("days") },
@@ -613,6 +627,20 @@ const TOOLS = [
   }
 ];
 
+/* ---------- cell bank ---------- */
+function bankSeg() {
+  const cur = store.lab.bank || "";
+  return `<div><div class="label" style="margin-bottom:6px">Cell bank · passage window (×10⁶/mL)</div><div class="seg" role="group" aria-label="Cell bank">
+    ${Object.entries(BANKS).map(([k, b]) => `<button data-bank="${k}" aria-pressed="${cur === k}">${b.n} · ${b.lo}–${b.hi}</button>`).join("")}
+    <button data-bank="" aria-pressed="${!BANKS[cur]}">Other</button></div></div>`;
+}
+function wireBank(after) {
+  document.querySelectorAll("[data-bank]").forEach(b => b.onclick = () => {
+    store.lab.bank = b.dataset.bank; if (BANKS[b.dataset.bank]) store.ident.gk = b.dataset.bank;
+    save(); updateTop(); after();
+  });
+}
+
 /* ---------- tools screen ---------- */
 let openTool = null;
 function renderToolList() {
@@ -625,7 +653,9 @@ function renderToolList() {
 function showTool(id) {
   openTool = TOOLS.find(t => t.id === id);
   const t = openTool, st = store.inputs[id] || (store.inputs[id] = {});
-  const mode = st._mode || (t.modes ? t.modes[0].id : null);
+  if (t.autoMode && st._modeDay !== todayISO()) { st._mode = t.autoMode(); st._modeDay = todayISO(); (t.modeResets || []).forEach(k => delete st[k]); save(); }
+  const modes = typeof t.modes === "function" ? t.modes() : t.modes;
+  const mode = st._mode || (modes ? modes[0].id : null);
   const hide = t.id === "c1v1" ? mode : null;
   const fields = t.fields.filter(fl => fl.id !== hide).map(fl => {
     const val = st[fl.id] !== undefined ? st[fl.id] : fl.def(mode);
@@ -638,7 +668,8 @@ function showTool(id) {
     <button class="back" id="back">‹ All tools</button>
     <div class="card">
       <div><div class="label">${t.group === "main" ? "At the hood" : "Planning"}</div><h2>${esc(t.title)}</h2></div>
-      ${t.modes ? `<div class="seg" role="group">${t.modes.map(m => `<button data-mode="${m.id}" aria-pressed="${m.id === mode}">${m.l}</button>`).join("")}</div>` : ""}
+      ${t.bank ? bankSeg() : ""}
+      ${modes ? `<div class="seg" role="group">${modes.map(m => `<button data-mode="${m.id}" aria-pressed="${m.id === mode}">${m.l}</button>`).join("")}</div>` : ""}
       ${t.presets ? `<div><div class="label" style="margin-bottom:6px">${t.presets.label}</div><div class="mini">${t.presets.options.map(o => `<button data-preset="${o.v}">${o.l}</button>`).join("")}</div></div>` : ""}
       <div class="fields">${fields}</div>
       <div class="row"><button class="btn" id="reset-in">Reset to lab values</button></div>
@@ -651,15 +682,16 @@ function showTool(id) {
     </div>`;
   $("#toollist").hidden = true; $("#toolview").hidden = false;
   $("#back").onclick = closeTool;
+  if (t.bank) wireBank(() => { if (t.bankResets) t.bankResets.forEach(k => delete st[k]); save(); showTool(id); });
   $("#reset-in").onclick = () => { store.inputs[id] = { _mode: mode }; save(); showTool(id); };
-  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st._mode = b.dataset.mode; (t.modeResets || []).forEach(k => delete st[k]); save(); showTool(id); });
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { st._mode = b.dataset.mode; st._modeDay = todayISO(); (t.modeResets || []).forEach(k => delete st[k]); save(); showTool(id); });
   document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => { const el = document.getElementById("f-" + t.presets.field); el.value = b.dataset.preset; st[t.presets.field] = b.dataset.preset; save(); compute(); });
   document.querySelectorAll("#toolview input").forEach(i => i.addEventListener("input", () => { st[i.id.slice(2)] = i.value; save(); compute(); }));
   compute();
   window.scrollTo(0, 0);
 }
 function compute() {
-  const t = openTool, st = store.inputs[t.id] || {}, mode = st._mode || (t.modes ? t.modes[0].id : null);
+  const t = openTool, st = store.inputs[t.id] || {}, mode = st._mode || (t.modes ? (typeof t.modes === "function" ? t.modes() : t.modes)[0].id : null);
   const v = {};
   t.fields.forEach(fl => { const el = document.getElementById("f-" + fl.id); v[fl.id] = el ? parseFloat(el.value) : NaN; });
   const r = t.calc(v, mode), out = $("#out");
@@ -684,13 +716,13 @@ const STEPS = [
     lab: ["Swirl to homogenize", "Take ~200 µL straight from the open flask for the Vi-CELL BLU, with a plastic pipette on the pipette controller (a P1000 would touch the flask walls)", "Sample right after opening; no wait as for a thaw"],
     why: ["Cells settle in minutes; an unswirled sample misreads density"], confirm: [] },
   { n: "3", name: "Count", s: "Vi-CELL BLU: VCD and viability",
-    lab: ["Count immediately", "Record VCD and viability", "One count per flask; flasks run as 2–3 replicates", "~95% viability is good"],
+    lab: ["Count immediately", "Record VCD and viability", "One count per flask; flasks run as 2–3 replicates", "Viability must be ≥ 95% (the day-0 count after a thaw is the exception: > 90%)", "Passage window depends on the cell bank: GK001 3–4 × 10⁶/mL, GK005 4.5–5.5 × 10⁶/mL"],
     why: ["VCD sets the dilution; viability tracks culture health"],
-    confirm: ["Passage VCD window", "Viability action threshold"] },
+    confirm: [] },
   { n: "4", name: "Calculate", s: "Culture and medium volumes",
     lab: ["ELN template normally; by hand while it's broken (use the Routine split tool)", "Each replicate calculated independently", "Passage every 3 or 4 days depending on planning; 4 preferred", "Scale up to the next flask size at each passage when the cell count allows", "Working volume = the flask's maximum volume (250 mL → 50 mL, 500 mL → 200 mL, 2 L → 800 mL), entered at every passage"],
     why: ["A fixed seeding density keeps passages comparable and in exponential growth"],
-    confirm: ["Passage VCD window"] },
+    confirm: [] },
   { n: "5", name: "Seed", s: "Medium first, then cells",
     lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the passage ID: XX-GKbb-Vv-[parent tag]-Pp-[child tag], e.g. 99-GK78-V4-ZBT01-P3-TLE01 (Labels tab builds it)"],
     why: ["Cells land in a full volume, not a thin film", "The label traces each flask to its parent"],
@@ -898,7 +930,8 @@ function renderLearn() {
     <div class="card">
       <div class="label">Key numbers in this lab</div>
       <table class="kv"><tbody>
-        ${SETTINGS.map(s => `<tr><td>${esc(s.t)}</td><td>${sig(S(s.id))} ${s.u} ${Sconf(s.id) ? "" : '<span class="chip">to confirm</span>'}</td></tr>`).join("")}
+        ${SETTINGS.filter(s => !/^pass(Min|Max)$/.test(s.id)).map(s => `<tr><td>${esc(s.t)}</td><td>${sig(S(s.id))} ${s.u} ${Sconf(s.id) ? "" : '<span class="chip">to confirm</span>'}</td></tr>`).join("")}
+        <tr><td>Passage window by cell bank</td><td>GK001 3–4 · GK005 4.5–5.5 e6/mL</td></tr>
         <tr><td>Incubator (HEK)</td><td>37 °C · 120 rpm · 8% CO₂ · 80% RH</td></tr>
         <tr><td>Flask → working volume</td><td>250 mL → 50 · 500 mL → 200 · 2 L → 800 mL</td></tr>
         <tr><td>Vi-CELL sample</td><td>~200 µL</td></tr>
@@ -935,6 +968,11 @@ function renderLearn() {
 function renderSettings() {
   $("#s-settings").innerHTML = `
     <div class="card">
+      <div><div class="label">Cell bank</div><h2>Which cells you're growing</h2></div>
+      ${bankSeg()}
+      <p class="small muted">Sets the passage window used by the calculators: GK001 3–4, GK005 4.5–5.5 × 10⁶/mL. "Other" uses the two window values further down.</p>
+    </div>
+    <div class="card">
       <div><div class="label">Labels</div><h2>You and your default line</h2></div>
       <p class="small muted">Used to prefill the label builder. Initials must match the Initials register.</p>
       <div class="fields">
@@ -950,7 +988,7 @@ function renderSettings() {
       <div>${SETTINGS.map(s => `
         <div class="set">
           <div><div class="t">${esc(s.t)}</div><div class="h">${esc(s.h)}</div></div>
-          <div class="inp"><input id="s-${s.id}" type="number" inputmode="decimal" step="any" value="${S(s.id)}"><span class="u">${s.u}</span></div>
+          <div class="inp"><input id="s-${s.id}" type="number" inputmode="decimal" step="any" value="${rawS(s.id)}"><span class="u">${s.u}</span></div>
           <label class="conf"><input type="checkbox" id="sc-${s.id}" ${Sconf(s.id) ? "checked" : ""}> Confirmed in the lab</label>
         </div>`).join("")}</div>
       <div class="row"><button class="btn danger" id="s-reset">Restore placeholders</button></div>
@@ -965,6 +1003,7 @@ function renderSettings() {
     $("#s-" + s.id).addEventListener("input", put);
     $("#sc-" + s.id).addEventListener("change", put);
   });
+  wireBank(renderSettings);
   [["init", "id-init"], ["proj", "id-proj"], ["gk", "id-gk"], ["vial", "id-vial"]].forEach(([k, id]) => $("#" + id).addEventListener("input", e => { store.ident[k] = norm(e.target.value); save(); }));
   $("#s-notes").addEventListener("input", e => { store.notes = e.target.value; save(); });
   let armed = false;
