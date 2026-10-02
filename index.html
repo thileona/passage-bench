@@ -326,20 +326,20 @@ store.lab = store.lab || {};
 
 /* ---------- lab values (defaults = placeholders until confirmed) ---------- */
 const SETTINGS = [
-  { id: "seed", t: "Seeding density, next passage in 4 days", h: "Preferred interval. Lower density because the cells grow one day longer", u: "e6/mL", def: 0.3, conf: false },
-  { id: "seed3", t: "Seeding density, next passage in 3 days", h: "Higher density because the cells have one day less to grow", u: "e6/mL", def: 0.55, conf: false },
+  { id: "seed", t: "Seeding density, next passage in 4 days", h: "Preferred interval. Lower density because the cells grow one day longer", u: "e6/mL", def: 0.3, conf: true },
+  { id: "seed3", t: "Seeding density, next passage in 3 days", h: "Higher density because the cells have one day less to grow (seen in the ELN template)", u: "e6/mL", def: 0.55, conf: true },
   { id: "p1vol", t: "First passage after thaw: volume", h: "500 mL flask", u: "mL", def: 200, conf: true },
   { id: "passMin", t: "Passage window, lower VCD", h: "Below this, the flask is usually not split yet", u: "e6/mL", def: 2.0, conf: false },
   { id: "passMax", t: "Passage window, upper VCD", h: "Above this, cells risk leaving exponential growth", u: "e6/mL", def: 4.0, conf: false },
   { id: "vol", t: "Working volume", h: "Culture volume per flask", u: "mL", def: 800, conf: true },
   { id: "flask", t: "Flask nominal size", h: "Shake flask capacity", u: "mL", def: 2000, conf: true },
   { id: "viab", t: "Minimum viability", h: "Below this, flag the flask", u: "%", def: 95, conf: false },
-  { id: "td", t: "Doubling time estimate", h: "Measure yours with the growth tool", u: "h", def: 24, conf: false },
+  { id: "td", t: "Doubling time", h: "Lab value; compare with your own in the growth tool", u: "h", def: 24, conf: true },
   { id: "days", t: "Days between passages", h: "Usual interval", u: "days", def: 3.5, conf: true },
   { id: "thawVol", t: "Thaw: final volume", h: "Vial + medium in the thaw flask", u: "mL", def: 50, conf: true },
   { id: "thawVcd", t: "Thaw: expected VCD", h: "First count right after seeding", u: "e6/mL", def: 0.3, conf: true },
   { id: "thawViab", t: "Thaw: minimum viability", h: "First count right after seeding", u: "%", def: 90, conf: true },
-  { id: "maxP", t: "Maximum passage number", h: "Cell age limit after thaw", u: "P", def: 20, conf: false }
+  { id: "maxP", t: "Maximum passage number", h: "Cell age limit after thaw; restart from a new vial after this", u: "P", def: 10, conf: true }
 ];
 function S(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.val !== undefined && v.val !== "" ? +v.val : d.def; }
 function Sconf(id) { const d = SETTINGS.find(s => s.id === id); const v = store.settings[id]; return v && v.conf !== undefined ? v.conf : d.conf; }
@@ -690,7 +690,7 @@ const STEPS = [
   { n: "4", name: "Calculate", s: "Culture and medium volumes",
     lab: ["ELN template normally; by hand while it's broken (use the Routine split tool)", "Each replicate calculated independently", "Passage every 3 or 4 days depending on planning; 4 preferred", "Scale up to the next flask size at each passage when the cell count allows", "Working volume = the flask's maximum volume (250 mL → 50 mL, 500 mL → 200 mL, 2 L → 800 mL), entered at every passage"],
     why: ["A fixed seeding density keeps passages comparable and in exponential growth"],
-    confirm: ["Seeding density by interval: 4 days → 0.3, 3 days → 0.55 (double-check with the team)"] },
+    confirm: ["Passage VCD window"] },
   { n: "5", name: "Seed", s: "Medium first, then cells",
     lab: ["Fresh medium into the new flask, then the culture volume", "Eppendorf pipette controller with 50 or 100 mL pipettes", "800 mL working volume", "Label with the passage ID: XX-GKbb-Vv-[parent tag]-Pp-[child tag], e.g. 99-GK78-V4-ZBT01-P3-TLE01 (Labels tab builds it)"],
     why: ["Cells land in a full volume, not a thin film", "The label traces each flask to its parent"],
@@ -700,9 +700,9 @@ const STEPS = [
     why: ["Shaking keeps cells suspended and drives oxygen transfer; 800 mL in 2 L leaves the headspace for it"],
     confirm: ["Throw in mm"] },
   { n: "7", side: true, name: "Document and close", s: "ELN, waste, cabinet",
-    lab: ["ELN: flask/sample IDs (passage number), VCD, viability, volumes, medium lot, operator", "Keep old flasks for two passages: three generations in the incubator", "Oldest generation inactivated with Virkon S in a jerrycan with water, then disposed of", "BSC disinfected, closed, UV"],
+    lab: ["ELN: flask/sample IDs (passage number), VCD, viability, volumes, medium lot, operator", "ELN passage table: set Intended Passage Duration (3 or 4 days) and type the lab's value in Target Seeding Density Override (the template defaults come from the mAbs team)", "Fill the second pair of volume fields with what you actually pipetted; never leave them empty", "Number of Atline samples = total samples planned from that flask (e.g. 2: day 0 and day 3)", "Incubator Parameter Checked: tick after checking the setpoints", "Maximum passage: P10, then restart from a new vial", "Keep old flasks for two passages: three generations in the incubator", "Oldest generation inactivated with Virkon S in a jerrycan with water, then disposed of", "BSC disinfected, closed, UV"],
     why: ["Backups let you fall back if the newest flask is lost", "Passage number matters because cell age affects productivity"],
-    confirm: ["Maximum passage / days after thaw", "Thaw frequency and cell bank (see Thawing protocol)", "Virkon S concentration and contact time"] }
+    confirm: ["Whether the age limit is also set in days (the ELN tracks total age of culture)", "Virkon S concentration and contact time"] }
 ];
 const THAW_STEPS = [
   { n: "1", name: "Switch on and pre-warm", s: "BSC, two Multitrons, medium, water",
@@ -710,7 +710,7 @@ const THAW_STEPS = [
     why: ["Cells must land in warm medium and go straight into a stable incubator", "Warming the water alongside the medium gives a 37 °C bath without a water bath, a classic contamination source"],
     confirm: ["Volume of MilliQ water and Falcon size"] },
   { n: "2", name: "ELN entries", s: "Equipment and medium, once medium is warm",
-    lab: ["Open the ELN (SharePoint › General › ELN; training experiments for now)", "Material information tab (ELN perspective) → open inventory domain", "Equipment: BSC GTPS n°1 and Multitron 1", "Medium: cursor in the yellow field, scan the barcode, then Retrieve details from inventory"],
+    lab: ["Open the ELN (SharePoint › General › ELN; training experiments for now)", "Material information tab (ELN perspective) → open inventory domain", "Equipment: BSC GTPS n°1 and Multitron 1", "Medium: cursor in the yellow field, scan the barcode, then Retrieve details from inventory", "Passage table for P0: the intended inoculum and medium volumes are typed in by hand (1 mL + 49 mL); then enter the volumes actually used"],
     why: ["Equipment and medium lot are traced before the cells are touched, so nothing is back-filled from memory"],
     confirm: ["Inoculum name to enter: XX-GKbb-Vv"] },
   { n: "3", name: "Prepare the flask", s: "49 mL medium in a 250 mL flask, labelled P0",
@@ -732,7 +732,7 @@ const THAW_STEPS = [
   { n: "7", side: true, name: "First passage (P1)", s: "Day 3 or 4, scale up to 500 mL flask",
     lab: ["Day 3 or day 4 depending on planning; day 4 preferred", "Normally scale up at this passage: 500 mL flask, 200 mL", "Flasks are scaled up at each passage when the cell count allows; enter the working volume at every passage", "Seeding target depends on the interval to the following passage: 0.3 × 10⁶/mL if it's in 4 days, 0.55 if it's in 3 days (Routine split has both)", "Working volume is always the flask's maximum: 250 mL → 50 mL, 500 mL → 200 mL, 2 L → 800 mL"],
     why: ["HEK cells tolerate a 3- or 4-day rhythm, which lets passages avoid weekends", "Scaling up early builds the cell mass needed for the 2 L flasks"],
-    confirm: ["Seeding density by interval: 4 days → 0.3, 3 days → 0.55 (double-check with the team)"] }
+    confirm: [] }
 ];
 const THAW_CHECK = [
   { g: "Switch on and pre-warm", items: ["BSC on (ready when the light comes on)", "Pre-warm Multitron set: 37 °C, 60 rpm, CO₂ 0%, humidity off", "Medium in to pre-warm (30 min – 1 h)", "MilliQ water in a Falcon, same incubator", "Main Multitron set: 37 °C, 120 rpm, 8% CO₂, 80% humidity"] },
@@ -772,7 +772,7 @@ function renderProtocol() {
 const CHECK = [
   { g: "Before", items: ["Medium pre-warmed in the incubator", "New flasks (size per scale-up) labeled with passage IDs (Labels tab)", "BSC on; gloves, sleeves and items disinfected", "Vi-CELL BLU ready"] },
   { g: "Per flask", items: ["Visual check: colour, turbidity, clumps, cap/filter", "Swirl, sample ~200 µL (plastic pipette on pipette controller)", "Count: VCD and viability", "Viability above threshold, VCD in window", "Calculate culture and medium volumes", "Medium into the new flask", "Culture into the new flask", "Cap closed, flask into shaking incubator"] },
-  { g: "After", items: ["ELN: flask and sample IDs, VCD, viability, volumes, medium lot", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
+  { g: "After", items: ["ELN: flask and sample IDs, VCD, viability, actual volumes, medium lot, seeding density override, incubator check", "Oldest generation inactivated (Virkon S) and disposed of", "BSC disinfected, closed, UV on"] }
 ];
 const fmtT = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 let timerInt = null;
@@ -1174,6 +1174,8 @@ function pbCompute() {
   const msgs = [];
   if (existing.length) msgs.push({ c: "bad", t: `Already in My flasks: ${existing.join(", ")}. Each ID must be unique.` });
   else if (first < sug) msgs.push({ c: "warn", t: `You already saved ${init}${pad2(sug - 1)} at P${p} for this vial. Next free number is ${pad2(sug)}.` });
+  if (p > S("maxP")) msgs.push({ c: "bad", t: `P${p} is beyond the maximum passage (P${S("maxP")}). Cells this old should be replaced by a new thaw.` });
+  else if (p === S("maxP")) msgs.push({ c: "warn", t: `P${p} is the last allowed passage. Plan a new thaw.` });
   if (p === 0) msgs.push({ c: "info", t: "Thaw is P0: no parent tag, and always one flask per vial (1 mL vial into one 250 mL flask at 50 mL)." });
   else msgs.push({ c: "info", t: `Your vessel numbers count all flasks you inoculate at P${p}, whatever their parent. Check the ELN for ${init} tags already used at P${p}.` });
   out.innerHTML = `<div class="label">Labels</div>
